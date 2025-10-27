@@ -161,6 +161,24 @@
             // 
             this.cbb_tt.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cbb_tt.FormattingEnabled = true;
+            this.cbb_tt.Items.AddRange(new object[] {
+            "UPC_A",
+            "UPC_E",
+            "EAN_8",
+            "EAN_13",
+            "Code_39",
+            "Code_93",
+            "Code_128",
+            "ITF",
+            "RSS_14",
+            "QR_CODE",
+            "DATA_MATRIX",
+            "AZTEC",
+            "PDF_417",
+            "MAXICODE",
+            "CODABAR",
+            "MSI",
+            "PLESSEY"});
             this.cbb_tt.Location = new System.Drawing.Point(564, 115);
             this.cbb_tt.Name = "cbb_tt";
             this.cbb_tt.Size = new System.Drawing.Size(121, 21);

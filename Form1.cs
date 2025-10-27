@@ -490,9 +490,5 @@ namespace MPV
             pictureBox1.Invalidate();
         }
 
-        private void btn2_Click(object sender, EventArgs e)
-        {
-
-        }
     }
 }
