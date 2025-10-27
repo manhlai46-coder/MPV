@@ -111,49 +111,46 @@ namespace MPV
 
         private void trv1_AfterSelect(object sender, TreeViewEventArgs e)
         {
+            if (e.Node == null) return;
+
             if (e.Node.Text.StartsWith("FOV "))
             {
-                int.TryParse(e.Node.Text.Replace("FOV ", ""), out int index);
-                selectedFovIndex = index - 1;
+                if (!int.TryParse(e.Node.Text.Replace("FOV ", ""), out int fovIndex)) return;
+                selectedFovIndex = fovIndex - 1;
                 selectedRoiIndex = -1;
 
                 if (selectedFovIndex >= 0 && selectedFovIndex < fovList.Count)
                 {
                     var fov = fovList[selectedFovIndex];
-
                     if (File.Exists(fov.ImagePath))
                     {
                         _bitmap = new Bitmap(fov.ImagePath);
                         pictureBox1.Image = _bitmap;
                         pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
-                        _showRoiOnImage = true;
                         roiList = fov.Rois;
+                        _showRoiOnImage = true;
                         pictureBox1.Invalidate();
                     }
-
-                    cb_hide.Checked = fov.IsHidden;
-
-                  
-                    cbbAlgorithm.Visible = false;
+                    propertyGrid1.SelectedObject = fovList[selectedFovIndex];
+                    cb_hide.Checked = fovList[selectedFovIndex].IsHidden;
                 }
             }
             else if (e.Node.Text.StartsWith("ROI "))
             {
-                int.TryParse(e.Node.Text.Replace("ROI ", ""), out int index);
-                selectedRoiIndex = index - 1;
+                if (!int.TryParse(e.Node.Text.Replace("ROI ", ""), out int roiIndex)) return;
+                selectedRoiIndex = roiIndex - 1;
 
-                if (selectedFovIndex >= 0 && selectedRoiIndex >= 0 && selectedRoiIndex < roiList.Count)
+                if (selectedRoiIndex >= 0 && selectedRoiIndex < roiList.Count)
                 {
+                    propertyGrid1.SelectedObject = roiList[selectedRoiIndex];
                     cb_hide.Checked = roiList[selectedRoiIndex].IsHidden;
-
-                 
-                   cbbAlgorithm.Visible = true;
-
-  
-                    cbbAlgorithm.SelectedItem = roiList[selectedRoiIndex].Algorithm;
+                    pictureBox1.Invalidate();
                 }
             }
+            cbbAlgorithm.Visible = true;
         }
+
+
 
 
 

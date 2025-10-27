@@ -41,6 +41,7 @@
             this.cb_hide = new System.Windows.Forms.CheckBox();
             this.btnAddFov = new System.Windows.Forms.Button();
             this.cbbAlgorithm = new System.Windows.Forms.ComboBox();
+            this.propertyGrid1 = new System.Windows.Forms.PropertyGrid();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.contextMenuTree.SuspendLayout();
             this.SuspendLayout();
@@ -49,7 +50,7 @@
             // 
             this.pictureBox1.Location = new System.Drawing.Point(29, 22);
             this.pictureBox1.Name = "pictureBox1";
-            this.pictureBox1.Size = new System.Drawing.Size(519, 285);
+            this.pictureBox1.Size = new System.Drawing.Size(529, 248);
             this.pictureBox1.TabIndex = 0;
             this.pictureBox1.TabStop = false;
             this.pictureBox1.Paint += new System.Windows.Forms.PaintEventHandler(this.pictureBox1_Paint);
@@ -66,7 +67,7 @@
             // 
             // btnrun
             // 
-            this.btnrun.Location = new System.Drawing.Point(564, 22);
+            this.btnrun.Location = new System.Drawing.Point(29, 276);
             this.btnrun.Name = "btnrun";
             this.btnrun.Size = new System.Drawing.Size(75, 23);
             this.btnrun.TabIndex = 4;
@@ -76,7 +77,7 @@
             // 
             // trv1
             // 
-            this.trv1.Location = new System.Drawing.Point(601, 170);
+            this.trv1.Location = new System.Drawing.Point(564, 99);
             this.trv1.Name = "trv1";
             this.trv1.Size = new System.Drawing.Size(165, 238);
             this.trv1.TabIndex = 5;
@@ -108,7 +109,7 @@
             // 
             // btn_Update
             // 
-            this.btn_Update.Location = new System.Drawing.Point(705, 22);
+            this.btn_Update.Location = new System.Drawing.Point(252, 276);
             this.btn_Update.Name = "btn_Update";
             this.btn_Update.Size = new System.Drawing.Size(75, 23);
             this.btn_Update.TabIndex = 7;
@@ -118,7 +119,7 @@
             // 
             // btnDrawRoi
             // 
-            this.btnDrawRoi.Location = new System.Drawing.Point(564, 70);
+            this.btnDrawRoi.Location = new System.Drawing.Point(150, 276);
             this.btnDrawRoi.Name = "btnDrawRoi";
             this.btnDrawRoi.Size = new System.Drawing.Size(75, 23);
             this.btnDrawRoi.TabIndex = 9;
@@ -129,7 +130,7 @@
             // cb_hide
             // 
             this.cb_hide.AutoSize = true;
-            this.cb_hide.Location = new System.Drawing.Point(772, 170);
+            this.cb_hide.Location = new System.Drawing.Point(735, 99);
             this.cb_hide.Name = "cb_hide";
             this.cb_hide.Size = new System.Drawing.Size(48, 17);
             this.cb_hide.TabIndex = 10;
@@ -139,7 +140,7 @@
             // 
             // btnAddFov
             // 
-            this.btnAddFov.Location = new System.Drawing.Point(705, 70);
+            this.btnAddFov.Location = new System.Drawing.Point(457, 276);
             this.btnAddFov.Name = "btnAddFov";
             this.btnAddFov.Size = new System.Drawing.Size(75, 23);
             this.btnAddFov.TabIndex = 11;
@@ -160,17 +161,25 @@
             "PDF_417",
             "DATA_MATRIX",
             "AZTEC"});
-            this.cbbAlgorithm.Location = new System.Drawing.Point(564, 115);
+            this.cbbAlgorithm.Location = new System.Drawing.Point(842, 148);
             this.cbbAlgorithm.Name = "cbbAlgorithm";
             this.cbbAlgorithm.Size = new System.Drawing.Size(121, 21);
             this.cbbAlgorithm.TabIndex = 12;
             this.cbbAlgorithm.SelectedIndexChanged += new System.EventHandler(this.cbbAlgorithm_SelectedIndexChanged);
             // 
+            // propertyGrid1
+            // 
+            this.propertyGrid1.Location = new System.Drawing.Point(781, 185);
+            this.propertyGrid1.Name = "propertyGrid1";
+            this.propertyGrid1.Size = new System.Drawing.Size(182, 130);
+            this.propertyGrid1.TabIndex = 13;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(832, 450);
+            this.ClientSize = new System.Drawing.Size(975, 503);
+            this.Controls.Add(this.propertyGrid1);
             this.Controls.Add(this.cbbAlgorithm);
             this.Controls.Add(this.btnAddFov);
             this.Controls.Add(this.cb_hide);
@@ -205,6 +214,7 @@
         private System.Windows.Forms.CheckBox cb_hide;
         private System.Windows.Forms.Button btnAddFov;
         private System.Windows.Forms.ComboBox cbbAlgorithm;
+        private System.Windows.Forms.PropertyGrid propertyGrid1;
     }
 }
 
