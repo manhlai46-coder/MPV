@@ -30,8 +30,6 @@
         {
             this.components = new System.ComponentModel.Container();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
-            this.btn1 = new System.Windows.Forms.Button();
-            this.btn2 = new System.Windows.Forms.Button();
             this.txt1 = new System.Windows.Forms.TextBox();
             this.btnrun = new System.Windows.Forms.Button();
             this.trv1 = new System.Windows.Forms.TreeView();
@@ -41,6 +39,9 @@
             this.btn_Update = new System.Windows.Forms.Button();
             this.ptrb2 = new System.Windows.Forms.PictureBox();
             this.btnDrawRoi = new System.Windows.Forms.Button();
+            this.cb_hide = new System.Windows.Forms.CheckBox();
+            this.btnAddFov = new System.Windows.Forms.Button();
+            this.cbb_tt = new System.Windows.Forms.ComboBox();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.contextMenuTree.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.ptrb2)).BeginInit();
@@ -58,26 +59,6 @@
             this.pictureBox1.MouseMove += new System.Windows.Forms.MouseEventHandler(this.pictureBox1_MouseMove);
             this.pictureBox1.MouseUp += new System.Windows.Forms.MouseEventHandler(this.pictureBox1_MouseUp);
             // 
-            // btn1
-            // 
-            this.btn1.Location = new System.Drawing.Point(564, 22);
-            this.btn1.Name = "btn1";
-            this.btn1.Size = new System.Drawing.Size(75, 23);
-            this.btn1.TabIndex = 1;
-            this.btn1.Text = "Chọn ảnh";
-            this.btn1.UseVisualStyleBackColor = true;
-            this.btn1.Click += new System.EventHandler(this.btn1_Click);
-            // 
-            // btn2
-            // 
-            this.btn2.Location = new System.Drawing.Point(564, 70);
-            this.btn2.Name = "btn2";
-            this.btn2.Size = new System.Drawing.Size(75, 23);
-            this.btn2.TabIndex = 2;
-            this.btn2.Text = "Add Roi";
-            this.btn2.UseVisualStyleBackColor = true;
-            this.btn2.Click += new System.EventHandler(this.btn2_Click);
-            // 
             // txt1
             // 
             this.txt1.Location = new System.Drawing.Point(12, 347);
@@ -87,13 +68,13 @@
             // 
             // btnrun
             // 
-            this.btnrun.Location = new System.Drawing.Point(705, 70);
+            this.btnrun.Location = new System.Drawing.Point(564, 22);
             this.btnrun.Name = "btnrun";
             this.btnrun.Size = new System.Drawing.Size(75, 23);
             this.btnrun.TabIndex = 4;
             this.btnrun.Text = "Run";
             this.btnrun.UseVisualStyleBackColor = true;
-            this.btnrun.Click += new System.EventHandler(this.btnrun_Click);
+            this.btnrun.Click += new System.EventHandler(this.btnrun_Click_1);
             // 
             // trv1
             // 
@@ -147,7 +128,7 @@
             // 
             // btnDrawRoi
             // 
-            this.btnDrawRoi.Location = new System.Drawing.Point(564, 113);
+            this.btnDrawRoi.Location = new System.Drawing.Point(564, 70);
             this.btnDrawRoi.Name = "btnDrawRoi";
             this.btnDrawRoi.Size = new System.Drawing.Size(75, 23);
             this.btnDrawRoi.TabIndex = 9;
@@ -155,11 +136,44 @@
             this.btnDrawRoi.UseVisualStyleBackColor = true;
             this.btnDrawRoi.Click += new System.EventHandler(this.btnDrawRoi_Click);
             // 
+            // cb_hide
+            // 
+            this.cb_hide.AutoSize = true;
+            this.cb_hide.Location = new System.Drawing.Point(772, 170);
+            this.cb_hide.Name = "cb_hide";
+            this.cb_hide.Size = new System.Drawing.Size(48, 17);
+            this.cb_hide.TabIndex = 10;
+            this.cb_hide.Text = "Hide";
+            this.cb_hide.UseVisualStyleBackColor = true;
+            this.cb_hide.CheckedChanged += new System.EventHandler(this.cb_hide_CheckedChanged);
+            // 
+            // btnAddFov
+            // 
+            this.btnAddFov.Location = new System.Drawing.Point(705, 70);
+            this.btnAddFov.Name = "btnAddFov";
+            this.btnAddFov.Size = new System.Drawing.Size(75, 23);
+            this.btnAddFov.TabIndex = 11;
+            this.btnAddFov.Text = "Add FOV";
+            this.btnAddFov.UseVisualStyleBackColor = true;
+            this.btnAddFov.Click += new System.EventHandler(this.btnAddFov_Click_1);
+            // 
+            // cbb_tt
+            // 
+            this.cbb_tt.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cbb_tt.FormattingEnabled = true;
+            this.cbb_tt.Location = new System.Drawing.Point(564, 115);
+            this.cbb_tt.Name = "cbb_tt";
+            this.cbb_tt.Size = new System.Drawing.Size(121, 21);
+            this.cbb_tt.TabIndex = 12;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(832, 450);
+            this.Controls.Add(this.cbb_tt);
+            this.Controls.Add(this.btnAddFov);
+            this.Controls.Add(this.cb_hide);
             this.Controls.Add(this.btnDrawRoi);
             this.Controls.Add(this.ptrb2);
             this.Controls.Add(this.btn_Update);
@@ -167,8 +181,6 @@
             this.Controls.Add(this.trv1);
             this.Controls.Add(this.btnrun);
             this.Controls.Add(this.txt1);
-            this.Controls.Add(this.btn2);
-            this.Controls.Add(this.btn1);
             this.Controls.Add(this.pictureBox1);
             this.Name = "Form1";
             this.Text = "Form1";
@@ -184,8 +196,6 @@
         #endregion
 
         private System.Windows.Forms.PictureBox pictureBox1;
-        private System.Windows.Forms.Button btn1;
-        private System.Windows.Forms.Button btn2;
         private System.Windows.Forms.TextBox txt1;
         private System.Windows.Forms.Button btnrun;
         private System.Windows.Forms.TreeView trv1;
@@ -195,6 +205,9 @@
         private System.Windows.Forms.Button btn_Update;
         private System.Windows.Forms.PictureBox ptrb2;
         private System.Windows.Forms.Button btnDrawRoi;
+        private System.Windows.Forms.CheckBox cb_hide;
+        private System.Windows.Forms.Button btnAddFov;
+        private System.Windows.Forms.ComboBox cbb_tt;
     }
 }
 

@@ -69,14 +69,15 @@
     <Compile Include="Form1.Designer.cs">
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
+    <Compile Include="Models\FovRegion.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Models\RoiRegion.cs" />
     <Compile Include="Renderers\RoiRenderers.cs" />
     <Compile Include="Service\BarcodeService.cs" />
+    <Compile Include="Service\FovManager.cs" />
     <Compile Include="Service\ImageHelper.cs" />
     <Compile Include="Service\LoggerService.cs" />
-    <Compile Include="Service\RoiManager.cs" />
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
     </EmbeddedResource>
