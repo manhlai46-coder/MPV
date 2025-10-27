@@ -1,4 +1,5 @@
-﻿using MPV.Models;
+﻿using MPV.Enums;
+using MPV.Models;
 using MPV.Renderers;
 using MPV.Service;
 using MPV.Services;
@@ -65,10 +66,11 @@ namespace MPV
                 MessageBox.Show("Lỗi khi load JSON: " + ex.Message);
                 LoggerService.Error("Error loading JSON", ex);
             }
-            cbb_tt.SelectedItem = 1;
+            cbbAlgorithm.DataSource = Enum.GetValues(typeof(MPV.Enums.BarcodeAlgorithm));
+            cbbAlgorithm.Visible = false;
         }
 
-  
+
 
         private void LoadFovToTreeView()
         {
@@ -115,43 +117,45 @@ namespace MPV
                 selectedFovIndex = index - 1;
                 selectedRoiIndex = -1;
 
-                cb_hide.Checked = fovList[selectedFovIndex].IsHidden;
-            }
-            else if (e.Node.Text.StartsWith("ROI "))
-            {
-                int.TryParse(e.Node.Text.Replace("ROI ", ""), out int index);
-                selectedRoiIndex = index - 1;
-
-                cb_hide.Checked = roiList[selectedRoiIndex].IsHidden;
-            }
-
-            if (e.Node.Text.StartsWith("FOV "))
-            {
-                int.TryParse(e.Node.Text.Replace("FOV ", ""), out int index);
-                selectedFovIndex = index - 1;
-                selectedRoiIndex = -1;
-
                 if (selectedFovIndex >= 0 && selectedFovIndex < fovList.Count)
                 {
                     var fov = fovList[selectedFovIndex];
+
                     if (File.Exists(fov.ImagePath))
                     {
                         _bitmap = new Bitmap(fov.ImagePath);
                         pictureBox1.Image = _bitmap;
                         pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
-                        roiList = fov.Rois;
                         _showRoiOnImage = true;
+                        roiList = fov.Rois;
                         pictureBox1.Invalidate();
                     }
+
+                    cb_hide.Checked = fov.IsHidden;
+
+                  
+                    cbbAlgorithm.Visible = false;
                 }
             }
             else if (e.Node.Text.StartsWith("ROI "))
             {
                 int.TryParse(e.Node.Text.Replace("ROI ", ""), out int index);
                 selectedRoiIndex = index - 1;
-                pictureBox1.Invalidate();
+
+                if (selectedFovIndex >= 0 && selectedRoiIndex >= 0 && selectedRoiIndex < roiList.Count)
+                {
+                    cb_hide.Checked = roiList[selectedRoiIndex].IsHidden;
+
+                 
+                   cbbAlgorithm.Visible = true;
+
+  
+                    cbbAlgorithm.SelectedItem = roiList[selectedRoiIndex].Algorithm;
+                }
             }
         }
+
+
 
         private void btnDrawRoi_Click(object sender, EventArgs e)
         {
@@ -422,7 +426,7 @@ namespace MPV
 
         }
 
-  
+
 
         private void btnrun_Click_1(object sender, EventArgs e)
         {
@@ -437,7 +441,6 @@ namespace MPV
             foreach (var fov in fovList)
             {
                 if (fov.IsHidden) continue;
-
                 if (!File.Exists(fov.ImagePath))
                 {
                     MessageBox.Show($"Không tìm thấy ảnh: {fov.ImagePath}");
@@ -445,7 +448,7 @@ namespace MPV
                 }
 
                 _bitmap = new Bitmap(fov.ImagePath);
-                roiList = fov.Rois; 
+                roiList = fov.Rois;
 
                 foreach (var roi in roiList)
                 {
@@ -454,7 +457,8 @@ namespace MPV
                     Rectangle rect = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
                     using (var cropped = CropBitmap(_bitmap, rect))
                     {
-                        string text = barcodeService.Decode(cropped);
+                     
+                        string text = barcodeService.Decode(cropped, roi.Algorithm);
                         roi.IsDetected = !string.IsNullOrEmpty(text);
                         roi.BarcodeText = text ?? "Không có mã";
                     }
@@ -468,9 +472,11 @@ namespace MPV
                 fovManager.Save(fovList);
 
                 Application.DoEvents();
-                System.Threading.Thread.Sleep(1000); // 1000ms = 1 giây
+                System.Threading.Thread.Sleep(500); 
             }
         }
+
+
 
         private void cb_hide_CheckedChanged(object sender, EventArgs e)
         {
@@ -490,5 +496,14 @@ namespace MPV
             pictureBox1.Invalidate();
         }
 
+        private void cbbAlgorithm_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (selectedRoiIndex >= 0)
+            {
+                roiList[selectedRoiIndex].Algorithm = (BarcodeAlgorithm)cbbAlgorithm.SelectedItem;
+                fovList[selectedFovIndex].Rois = roiList;
+                fovManager.Save(fovList);
+            }
+        }
     }
 }

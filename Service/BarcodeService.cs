@@ -1,18 +1,20 @@
-﻿using System.Drawing;
+﻿using MPV.Enums;
+using System.Drawing;
 using ZXing;
 
 namespace MPV.Services
 {
     public class BarcodeService
     {
-        public string Decode(Bitmap cropped)
+        public string Decode(Bitmap cropped, BarcodeAlgorithm algorithm)
         {
             var reader = new BarcodeReaderGeneric
             {
-                AutoRotate = true,
-                TryInverted = true,
+                AutoRotate = false, 
+                TryInverted = false,
                 Options = new ZXing.Common.DecodingOptions
                 {
+                    PossibleFormats = new[] { MapAlgorithmToFormat(algorithm) },
                     TryHarder = true
                 }
             };
@@ -22,7 +24,23 @@ namespace MPV.Services
             return result?.Text;
         }
 
-        
+        private BarcodeFormat MapAlgorithmToFormat(BarcodeAlgorithm algorithm)
+        {
+            switch (algorithm)
+            {
+                case BarcodeAlgorithm.QRCode: return BarcodeFormat.QR_CODE;
+                case BarcodeAlgorithm.Code128: return BarcodeFormat.CODE_128;
+                case BarcodeAlgorithm.EAN13: return BarcodeFormat.EAN_13;
+                case BarcodeAlgorithm.DataMatrix: return BarcodeFormat.DATA_MATRIX;
+                case BarcodeAlgorithm.CODE_39: return BarcodeFormat.CODE_39;
+                case BarcodeAlgorithm.EAN_8: return BarcodeFormat.EAN_8;
+                case BarcodeAlgorithm.UPC_A: return BarcodeFormat.UPC_A;
+                case BarcodeAlgorithm.PDF_417: return BarcodeFormat.PDF_417;
+                case BarcodeAlgorithm.AZTEC: return BarcodeFormat.AZTEC;
+                default: return BarcodeFormat.QR_CODE;
+            }
+        }
+
         private class MyBitmapLuminanceSource : LuminanceSource
         {
             private readonly byte[] _luminances;
@@ -41,6 +59,7 @@ namespace MPV.Services
             }
 
             public override byte[] Matrix => _luminances;
+
             public override byte[] getRow(int y, byte[] row)
             {
                 if (row == null || row.Length < Width)

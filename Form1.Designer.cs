@@ -37,14 +37,12 @@
             this.menuDelete = new System.Windows.Forms.ToolStripMenuItem();
             this.btn_Exit = new System.Windows.Forms.Button();
             this.btn_Update = new System.Windows.Forms.Button();
-            this.ptrb2 = new System.Windows.Forms.PictureBox();
             this.btnDrawRoi = new System.Windows.Forms.Button();
             this.cb_hide = new System.Windows.Forms.CheckBox();
             this.btnAddFov = new System.Windows.Forms.Button();
-            this.cbb_tt = new System.Windows.Forms.ComboBox();
+            this.cbbAlgorithm = new System.Windows.Forms.ComboBox();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.contextMenuTree.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.ptrb2)).BeginInit();
             this.SuspendLayout();
             // 
             // pictureBox1
@@ -118,14 +116,6 @@
             this.btn_Update.UseVisualStyleBackColor = true;
             this.btn_Update.Click += new System.EventHandler(this.btn_Update_Click);
             // 
-            // ptrb2
-            // 
-            this.ptrb2.Location = new System.Drawing.Point(228, 334);
-            this.ptrb2.Name = "ptrb2";
-            this.ptrb2.Size = new System.Drawing.Size(242, 103);
-            this.ptrb2.TabIndex = 8;
-            this.ptrb2.TabStop = false;
-            // 
             // btnDrawRoi
             // 
             this.btnDrawRoi.Location = new System.Drawing.Point(564, 70);
@@ -157,43 +147,34 @@
             this.btnAddFov.UseVisualStyleBackColor = true;
             this.btnAddFov.Click += new System.EventHandler(this.btnAddFov_Click_1);
             // 
-            // cbb_tt
+            // cbbAlgorithm
             // 
-            this.cbb_tt.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cbb_tt.FormattingEnabled = true;
-            this.cbb_tt.Items.AddRange(new object[] {
-            "UPC_A",
-            "UPC_E",
-            "EAN_8",
-            "EAN_13",
-            "Code_39",
-            "Code_93",
-            "Code_128",
-            "ITF",
-            "RSS_14",
+            this.cbbAlgorithm.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cbbAlgorithm.FormattingEnabled = true;
+            this.cbbAlgorithm.Items.AddRange(new object[] {
             "QR_CODE",
-            "DATA_MATRIX",
-            "AZTEC",
+            "CODE_128",
+            "CODE_39",
+            "EAN_8",
+            "UPC_A",
             "PDF_417",
-            "MAXICODE",
-            "CODABAR",
-            "MSI",
-            "PLESSEY"});
-            this.cbb_tt.Location = new System.Drawing.Point(564, 115);
-            this.cbb_tt.Name = "cbb_tt";
-            this.cbb_tt.Size = new System.Drawing.Size(121, 21);
-            this.cbb_tt.TabIndex = 12;
+            "DATA_MATRIX",
+            "AZTEC"});
+            this.cbbAlgorithm.Location = new System.Drawing.Point(564, 115);
+            this.cbbAlgorithm.Name = "cbbAlgorithm";
+            this.cbbAlgorithm.Size = new System.Drawing.Size(121, 21);
+            this.cbbAlgorithm.TabIndex = 12;
+            this.cbbAlgorithm.SelectedIndexChanged += new System.EventHandler(this.cbbAlgorithm_SelectedIndexChanged);
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(832, 450);
-            this.Controls.Add(this.cbb_tt);
+            this.Controls.Add(this.cbbAlgorithm);
             this.Controls.Add(this.btnAddFov);
             this.Controls.Add(this.cb_hide);
             this.Controls.Add(this.btnDrawRoi);
-            this.Controls.Add(this.ptrb2);
             this.Controls.Add(this.btn_Update);
             this.Controls.Add(this.btn_Exit);
             this.Controls.Add(this.trv1);
@@ -205,7 +186,6 @@
             this.Load += new System.EventHandler(this.Form1_Load);
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             this.contextMenuTree.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.ptrb2)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -221,11 +201,10 @@
         private System.Windows.Forms.ToolStripMenuItem menuDelete;
         private System.Windows.Forms.Button btn_Exit;
         private System.Windows.Forms.Button btn_Update;
-        private System.Windows.Forms.PictureBox ptrb2;
         private System.Windows.Forms.Button btnDrawRoi;
         private System.Windows.Forms.CheckBox cb_hide;
         private System.Windows.Forms.Button btnAddFov;
-        private System.Windows.Forms.ComboBox cbb_tt;
+        private System.Windows.Forms.ComboBox cbbAlgorithm;
     }
 }
 
