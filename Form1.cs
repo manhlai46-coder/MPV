@@ -338,6 +338,10 @@ namespace MPV
                 {
                     fovList[selectedFovIndex].Rois.RemoveAt(selectedRoiIndex);
                     fovManager.Save(fovList);
+                    roiList = fovList[selectedFovIndex].Rois;
+                    selectedRoiIndex = -1;
+                    propertyGrid1.SelectedObject = null;
+
                     LoadFovToTreeView();
 
                     if (File.Exists(fovList[selectedFovIndex].ImagePath))
@@ -359,11 +363,13 @@ namespace MPV
                     selectedFovIndex = -1;
                     selectedRoiIndex = -1;
                     roiList.Clear();
+                    propertyGrid1.SelectedObject = null;
 
                     LoadFovToTreeView();
 
                     if (fovList.Count > 0)
                     {
+                        selectedFovIndex = 0;
                         _bitmap = new Bitmap(fovList[0].ImagePath);
                         pictureBox1.Image = _bitmap;
                         roiList = fovList[0].Rois;
@@ -379,6 +385,7 @@ namespace MPV
                 }
             }
         }
+
 
 
 

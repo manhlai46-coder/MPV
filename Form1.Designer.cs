@@ -169,7 +169,7 @@
             // 
             // propertyGrid1
             // 
-            this.propertyGrid1.Location = new System.Drawing.Point(781, 185);
+            this.propertyGrid1.Location = new System.Drawing.Point(765, 187);
             this.propertyGrid1.Name = "propertyGrid1";
             this.propertyGrid1.Size = new System.Drawing.Size(182, 130);
             this.propertyGrid1.TabIndex = 13;
