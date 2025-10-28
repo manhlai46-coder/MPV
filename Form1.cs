@@ -66,9 +66,7 @@ namespace MPV
                 MessageBox.Show("Lỗi khi load JSON: " + ex.Message);
                 LoggerService.Error("Error loading JSON", ex);
             }
-            cbbAlgorithm.DataSource = Enum.GetValues(typeof(MPV.Enums.BarcodeAlgorithm));
-            cbbAlgorithm.Visible = false;
-            cbb_check.Visible = false;
+            
         }
 
 
@@ -132,8 +130,8 @@ namespace MPV
                         _showRoiOnImage = true;
                         pictureBox1.Invalidate();
                     }
-                    propertyGrid1.SelectedObject = fovList[selectedFovIndex];
-                    cb_hide.Checked = fovList[selectedFovIndex].IsHidden;
+                    
+                   
                 }
             }
             else if (e.Node.Text.StartsWith("ROI "))
@@ -143,13 +141,13 @@ namespace MPV
 
                 if (selectedRoiIndex >= 0 && selectedRoiIndex < roiList.Count)
                 {
-                    propertyGrid1.SelectedObject = roiList[selectedRoiIndex];
-                    cb_hide.Checked = roiList[selectedRoiIndex].IsHidden;
+                   
+                   
                     pictureBox1.Invalidate();
                 }
             }
-            cbbAlgorithm.Visible = false;
-            cbb_check.Visible = true;
+
+           
         }
 
 
@@ -342,7 +340,7 @@ namespace MPV
                     fovManager.Save(fovList);
                     roiList = fovList[selectedFovIndex].Rois;
                     selectedRoiIndex = -1;
-                    propertyGrid1.SelectedObject = null;
+                  
 
                     LoadFovToTreeView();
 
@@ -365,7 +363,7 @@ namespace MPV
                     selectedFovIndex = -1;
                     selectedRoiIndex = -1;
                     roiList.Clear();
-                    propertyGrid1.SelectedObject = null;
+                  
 
                     LoadFovToTreeView();
 
@@ -484,40 +482,16 @@ namespace MPV
 
 
 
-        private void cb_hide_CheckedChanged(object sender, EventArgs e)
+      
+
+       
+
+      
+
+        private void btn_Exit_Click_1(object sender, EventArgs e)
         {
-            if (selectedFovIndex >= 0 && selectedRoiIndex < 0)
-            {
-               
-                fovList[selectedFovIndex].IsHidden = cb_hide.Checked;
-            }
-            else if (selectedFovIndex >= 0 && selectedRoiIndex >= 0)
-            {
-                roiList[selectedRoiIndex].IsHidden = cb_hide.Checked;
-                fovList[selectedFovIndex].Rois = roiList;
-            }
-
-            fovManager.Save(fovList);
-            LoadFovToTreeView();
-            pictureBox1.Invalidate();
+            Application.Exit();
         }
-
-        private void cbbAlgorithm_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            if (selectedRoiIndex >= 0)
-            {
-                roiList[selectedRoiIndex].Algorithm = (BarcodeAlgorithm)cbbAlgorithm.SelectedItem;
-                fovList[selectedFovIndex].Rois = roiList;
-                fovManager.Save(fovList);
-            }
-        }
-
-        private void cbb_check_SelectedIndexChanged(object sender, EventArgs e)
-        {
-
-            cbbAlgorithm.Visible = true;
-        }
-
     }
 
 }

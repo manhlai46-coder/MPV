@@ -38,11 +38,7 @@
             this.btn_Exit = new System.Windows.Forms.Button();
             this.btn_Update = new System.Windows.Forms.Button();
             this.btnDrawRoi = new System.Windows.Forms.Button();
-            this.cb_hide = new System.Windows.Forms.CheckBox();
             this.btnAddFov = new System.Windows.Forms.Button();
-            this.cbbAlgorithm = new System.Windows.Forms.ComboBox();
-            this.propertyGrid1 = new System.Windows.Forms.PropertyGrid();
-            this.cbb_check = new System.Windows.Forms.ComboBox();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.contextMenuTree.SuspendLayout();
             this.SuspendLayout();
@@ -78,9 +74,9 @@
             // 
             // trv1
             // 
-            this.trv1.Location = new System.Drawing.Point(564, 99);
+            this.trv1.Location = new System.Drawing.Point(564, 22);
             this.trv1.Name = "trv1";
-            this.trv1.Size = new System.Drawing.Size(165, 238);
+            this.trv1.Size = new System.Drawing.Size(165, 248);
             this.trv1.TabIndex = 5;
             this.trv1.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.trv1_AfterSelect);
             // 
@@ -106,6 +102,7 @@
             this.btn_Exit.TabIndex = 6;
             this.btn_Exit.Text = "Exit";
             this.btn_Exit.UseVisualStyleBackColor = true;
+            this.btn_Exit.Click += new System.EventHandler(this.btn_Exit_Click_1);
             // 
             // btn_Update
             // 
@@ -127,17 +124,6 @@
             this.btnDrawRoi.UseVisualStyleBackColor = true;
             this.btnDrawRoi.Click += new System.EventHandler(this.btnDrawRoi_Click);
             // 
-            // cb_hide
-            // 
-            this.cb_hide.AutoSize = true;
-            this.cb_hide.Location = new System.Drawing.Point(735, 99);
-            this.cb_hide.Name = "cb_hide";
-            this.cb_hide.Size = new System.Drawing.Size(48, 17);
-            this.cb_hide.TabIndex = 10;
-            this.cb_hide.Text = "Hide";
-            this.cb_hide.UseVisualStyleBackColor = true;
-            this.cb_hide.CheckedChanged += new System.EventHandler(this.cb_hide_CheckedChanged);
-            // 
             // btnAddFov
             // 
             this.btnAddFov.Location = new System.Drawing.Point(457, 276);
@@ -148,56 +134,12 @@
             this.btnAddFov.UseVisualStyleBackColor = true;
             this.btnAddFov.Click += new System.EventHandler(this.btnAddFov_Click_1);
             // 
-            // cbbAlgorithm
-            // 
-            this.cbbAlgorithm.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cbbAlgorithm.FormattingEnabled = true;
-            this.cbbAlgorithm.Items.AddRange(new object[] {
-            "QR_CODE",
-            "CODE_128",
-            "CODE_39",
-            "EAN_8",
-            "UPC_A",
-            "PDF_417",
-            "DATA_MATRIX",
-            "AZTEC"});
-            this.cbbAlgorithm.Location = new System.Drawing.Point(826, 95);
-            this.cbbAlgorithm.Name = "cbbAlgorithm";
-            this.cbbAlgorithm.Size = new System.Drawing.Size(121, 21);
-            this.cbbAlgorithm.TabIndex = 12;
-            this.cbbAlgorithm.SelectedIndexChanged += new System.EventHandler(this.cbbAlgorithm_SelectedIndexChanged);
-            // 
-            // propertyGrid1
-            // 
-            this.propertyGrid1.Location = new System.Drawing.Point(765, 187);
-            this.propertyGrid1.Name = "propertyGrid1";
-            this.propertyGrid1.Size = new System.Drawing.Size(182, 130);
-            this.propertyGrid1.TabIndex = 13;
-            // 
-            // cbb_check
-            // 
-            this.cbb_check.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cbb_check.FormattingEnabled = true;
-            this.cbb_check.Items.AddRange(new object[] {
-            "Barcode",
-            "A",
-            "B"});
-            this.cbb_check.Location = new System.Drawing.Point(765, 145);
-            this.cbb_check.Name = "cbb_check";
-            this.cbb_check.Size = new System.Drawing.Size(121, 21);
-            this.cbb_check.TabIndex = 14;
-            this.cbb_check.SelectedIndexChanged += new System.EventHandler(this.cbb_check_SelectedIndexChanged);
-            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(975, 503);
-            this.Controls.Add(this.cbb_check);
-            this.Controls.Add(this.propertyGrid1);
-            this.Controls.Add(this.cbbAlgorithm);
             this.Controls.Add(this.btnAddFov);
-            this.Controls.Add(this.cb_hide);
             this.Controls.Add(this.btnDrawRoi);
             this.Controls.Add(this.btn_Update);
             this.Controls.Add(this.btn_Exit);
@@ -226,11 +168,7 @@
         private System.Windows.Forms.Button btn_Exit;
         private System.Windows.Forms.Button btn_Update;
         private System.Windows.Forms.Button btnDrawRoi;
-        private System.Windows.Forms.CheckBox cb_hide;
         private System.Windows.Forms.Button btnAddFov;
-        private System.Windows.Forms.ComboBox cbbAlgorithm;
-        private System.Windows.Forms.PropertyGrid propertyGrid1;
-        private System.Windows.Forms.ComboBox cbb_check;
     }
 }
 
