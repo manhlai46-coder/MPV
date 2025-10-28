@@ -144,6 +144,9 @@ namespace MPV
                    
                    
                     pictureBox1.Invalidate();
+
+                    // Show properties for the selected ROI in the panel
+                    ShowRoiProperties(roiList[selectedRoiIndex]);
                 }
             }
 
@@ -206,19 +209,65 @@ namespace MPV
 
         private void pictureBox1_MouseUp(object sender, MouseEventArgs e)
         {
-            if (_bitmap == null || !_drawMode) return;
+            if (_bitmap == null) return;
+
+            // If not in draw mode, treat mouse up as a click: hit-test ROIs and show properties
+            if (!_drawMode)
+            {
+                // Left-click: select ROI under cursor
+                if (e.Button == MouseButtons.Left)
+                {
+                    Rectangle imgRect = ImageHelper.GetDisplayedImageRectangle(pictureBox1);
+                    if (imgRect.Contains(e.Location))
+                    {
+                        float scaleX = (float)_bitmap.Width / imgRect.Width;
+                        float scaleY = (float)_bitmap.Height / imgRect.Height;
+                        int imgX = (int)((e.X - imgRect.X) * scaleX);
+                        int imgY = (int)((e.Y - imgRect.Y) * scaleY);
+
+                        int foundIndex = roiList.FindIndex(r => new Rectangle(r.X, r.Y, r.Width, r.Height).Contains(imgX, imgY));
+                        if (foundIndex >= 0)
+                        {
+                            selectedRoiIndex = foundIndex;
+                            ShowRoiProperties(roiList[selectedRoiIndex]);
+                            pictureBox1.Invalidate();
+                        }
+                        else
+                        {
+                            // clicked outside any ROI
+                            selectedRoiIndex = -1;
+                            panelImage.Controls.Clear();
+                            pictureBox1.Invalidate();
+                        }
+                    }
+                }
+
+                // Right-click behavior (existing behavior left unchanged)
+                if (e.Button == MouseButtons.Right)
+                {
+                    TreeNode node = trv1.GetNodeAt(e.X, e.Y);
+                    if (node != null)
+                    {
+                        trv1.SelectedNode = node;
+                    }
+                }
+
+                return;
+            }
+
+            // Existing draw/update ROI logic (unchanged)
             if (_selectRectangle.Width == 0 || _selectRectangle.Height == 0) return;
 
             _isSelecting = false;
 
-            Rectangle imgRect = ImageHelper.GetDisplayedImageRectangle(pictureBox1);
-            float scaleX = (float)_bitmap.Width / imgRect.Width;
-            float scaleY = (float)_bitmap.Height / imgRect.Height;
+            Rectangle imgRect2 = ImageHelper.GetDisplayedImageRectangle(pictureBox1);
+            float scaleX2 = (float)_bitmap.Width / imgRect2.Width;
+            float scaleY2 = (float)_bitmap.Height / imgRect2.Height;
 
-            int realX = (int)((_selectRectangle.X - imgRect.X) * scaleX);
-            int realY = (int)((_selectRectangle.Y - imgRect.Y) * scaleY);
-            int realW = (int)(_selectRectangle.Width * scaleX);
-            int realH = (int)(_selectRectangle.Height * scaleY);
+            int realX = (int)((_selectRectangle.X - imgRect2.X) * scaleX2);
+            int realY = (int)((_selectRectangle.Y - imgRect2.Y) * scaleY2);
+            int realW = (int)(_selectRectangle.Width * scaleX2);
+            int realH = (int)(_selectRectangle.Height * scaleY2);
 
             realX = Math.Max(0, realX);
             realY = Math.Max(0, realY);
@@ -351,6 +400,9 @@ namespace MPV
                         _showRoiOnImage = true;
                         pictureBox1.Invalidate();
                     }
+
+                    // clear panel when ROI removed
+                    panelImage.Controls.Clear();
                 }
             }
             else if (trv1.SelectedNode.Text.StartsWith("FOV ") && selectedFovIndex >= 0)
@@ -382,6 +434,9 @@ namespace MPV
                     }
 
                     pictureBox1.Invalidate();
+
+                    // clear panel when FOV removed
+                    panelImage.Controls.Clear();
                 }
             }
         }
@@ -461,10 +516,14 @@ namespace MPV
                     Rectangle rect = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
                     using (var cropped = CropBitmap(_bitmap, rect))
                     {
-                     
                         string text = barcodeService.Decode(cropped, roi.Algorithm);
                         roi.IsDetected = !string.IsNullOrEmpty(text);
-                        roi.BarcodeText = text ?? "Không có mã";
+                        
+                        // Display barcode result in debug/log if needed
+                        if (roi.IsDetected)
+                        {
+                            LoggerService.Info($"ROI detected barcode: {text}");
+                        }
                     }
                 }
 
@@ -473,20 +532,17 @@ namespace MPV
                 _showRoiOnImage = true;
                 pictureBox1.Invalidate();
 
-                fovManager.Save(fovList);
-
                 Application.DoEvents();
                 System.Threading.Thread.Sleep(500); 
             }
+
+            MessageBox.Show("Đã hoàn thành dịch barcode.");
         }
 
 
 
       
 
-       
-
-      
 
         private void btn_Exit_Click_1(object sender, EventArgs e)
         {
@@ -496,6 +552,139 @@ namespace MPV
         private void panelImage_Paint(object sender, PaintEventArgs e)
         {
 
+        }
+
+        /// <summary>
+        /// Display all properties of a ROI inside the right-hand panel (panelImage).
+        /// Shows editable ComboBox for algorithm selection.
+        /// </summary>
+        /// <param name="roi">RoiRegion to show (can be null).</param>
+        private void ShowRoiProperties(RoiRegion roi)
+        {
+            panelImage.Controls.Clear();
+
+            if (roi == null) return;
+
+            // Create a TableLayoutPanel for organized layout
+            var tableLayout = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 2,
+                AutoSize = true,
+                Padding = new Padding(10)
+            };
+
+            tableLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120F));
+            tableLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+
+            // ROI Properties
+            AddPropertyRow(tableLayout, "X:", roi.X.ToString());
+            AddPropertyRow(tableLayout, "Y:", roi.Y.ToString());
+            AddPropertyRow(tableLayout, "Width:", roi.Width.ToString());
+            AddPropertyRow(tableLayout, "Height:", roi.Height.ToString());
+            AddPropertyRow(tableLayout, "IsDetected:", roi.IsDetected.ToString());
+
+            // Algorithm Selection ComboBox
+            var lblAlgorithm = new Label
+            {
+                Text = "Algorithm:",
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold)
+            };
+
+            var cboAlgorithm = new ComboBox
+            {
+                Dock = DockStyle.Fill,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                Font = new Font("Segoe UI", 9F)
+            };
+
+            // Populate ComboBox with all available algorithms
+            cboAlgorithm.Items.AddRange(new object[]
+            {
+                BarcodeAlgorithm.QRCode,
+                BarcodeAlgorithm.Code128,
+                BarcodeAlgorithm.EAN13,
+                BarcodeAlgorithm.DataMatrix,
+                BarcodeAlgorithm.CODE_39,
+                BarcodeAlgorithm.EAN_8,
+                BarcodeAlgorithm.UPC_A,
+                BarcodeAlgorithm.PDF_417,
+                BarcodeAlgorithm.AZTEC
+            });
+
+            // Set current algorithm
+            cboAlgorithm.SelectedItem = roi.Algorithm;
+
+            // Handle algorithm change
+            cboAlgorithm.SelectedIndexChanged += (s, e) =>
+            {
+                if (selectedRoiIndex >= 0 && selectedRoiIndex < roiList.Count)
+                {
+                    roiList[selectedRoiIndex].Algorithm = (BarcodeAlgorithm)cboAlgorithm.SelectedItem;
+                    fovList[selectedFovIndex].Rois = roiList;
+                    fovManager.Save(fovList);
+                    LoggerService.Info($"Đã thay đổi thuật toán ROI {selectedRoiIndex + 1} thành {cboAlgorithm.SelectedItem}");
+                }
+            };
+
+            tableLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            tableLayout.Controls.Add(lblAlgorithm, 0, tableLayout.RowCount - 1);
+            tableLayout.Controls.Add(cboAlgorithm, 1, tableLayout.RowCount - 1);
+
+            // Add IsHidden checkbox
+            var chkHidden = new CheckBox
+            {
+                Text = "Hidden",
+                Checked = roi.IsHidden,
+                Dock = DockStyle.Fill,
+                Font = new Font("Segoe UI", 9F)
+            };
+
+            chkHidden.CheckedChanged += (s, e) =>
+            {
+                if (selectedRoiIndex >= 0 && selectedRoiIndex < roiList.Count)
+                {
+                    roiList[selectedRoiIndex].IsHidden = chkHidden.Checked;
+                    fovList[selectedFovIndex].Rois = roiList;
+                    fovManager.Save(fovList);
+                    pictureBox1.Invalidate();
+                }
+            };
+
+            tableLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            tableLayout.Controls.Add(new Label { Text = "IsHidden:", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, Font = new Font("Segoe UI", 9F, FontStyle.Bold) }, 0, tableLayout.RowCount - 1);
+            tableLayout.Controls.Add(chkHidden, 1, tableLayout.RowCount - 1);
+
+            panelImage.Controls.Add(tableLayout);
+        }
+
+        /// <summary>
+        /// Helper method to add a property row to the table layout
+        /// </summary>
+        private void AddPropertyRow(TableLayoutPanel table, string label, string value)
+        {
+            var lblProperty = new Label
+            {
+                Text = label,
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold)
+            };
+
+            var txtValue = new TextBox
+            {
+                Text = value,
+                Dock = DockStyle.Fill,
+                ReadOnly = true,
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = new Font("Segoe UI", 9F)
+            };
+
+            table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            table.Controls.Add(lblProperty, 0, table.RowCount - 1);
+            table.Controls.Add(txtValue, 1, table.RowCount - 1);
         }
     }
 

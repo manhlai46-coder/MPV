@@ -63,16 +63,6 @@ namespace MPV.Renderers
                 {
                     g.DrawString($"ROI {i + 1}", font, brush, displayRect.X, displayRect.Y - 18);
                 }
-
-                
-                if (showResults && roi.IsDetected && !string.IsNullOrEmpty(roi.BarcodeText))
-                {
-                    using (Font font = new Font("Consolas", 10, FontStyle.Bold))
-                    using (SolidBrush brush = new SolidBrush(Color.Blue))
-                    {
-                        g.DrawString(roi.BarcodeText, font, brush, displayRect.X, displayRect.Y + displayRect.Height + 5);
-                    }
-                }
             }
         }
     }
