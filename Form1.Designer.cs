@@ -39,6 +39,7 @@
             this.btn_Update = new System.Windows.Forms.Button();
             this.btnDrawRoi = new System.Windows.Forms.Button();
             this.btnAddFov = new System.Windows.Forms.Button();
+            this.panelImage = new System.Windows.Forms.Panel();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.contextMenuTree.SuspendLayout();
             this.SuspendLayout();
@@ -134,11 +135,20 @@
             this.btnAddFov.UseVisualStyleBackColor = true;
             this.btnAddFov.Click += new System.EventHandler(this.btnAddFov_Click_1);
             // 
+            // panelImage
+            // 
+            this.panelImage.Location = new System.Drawing.Point(761, 22);
+            this.panelImage.Name = "panelImage";
+            this.panelImage.Size = new System.Drawing.Size(200, 248);
+            this.panelImage.TabIndex = 12;
+            this.panelImage.Paint += new System.Windows.Forms.PaintEventHandler(this.panelImage_Paint);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(975, 503);
+            this.Controls.Add(this.panelImage);
             this.Controls.Add(this.btnAddFov);
             this.Controls.Add(this.btnDrawRoi);
             this.Controls.Add(this.btn_Update);
@@ -169,6 +179,7 @@
         private System.Windows.Forms.Button btn_Update;
         private System.Windows.Forms.Button btnDrawRoi;
         private System.Windows.Forms.Button btnAddFov;
+        private System.Windows.Forms.Panel panelImage;
     }
 }
 

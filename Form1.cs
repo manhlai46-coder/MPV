@@ -492,6 +492,11 @@ namespace MPV
         {
             Application.Exit();
         }
+
+        private void panelImage_Paint(object sender, PaintEventArgs e)
+        {
+
+        }
     }
 
 }
