@@ -22,6 +22,7 @@ namespace MPV.Services
             var luminanceSource = new MyBitmapLuminanceSource(cropped);
             var result = reader.Decode(luminanceSource);
             return result?.Text;
+
         }
 
         private BarcodeFormat MapAlgorithmToFormat(BarcodeAlgorithm algorithm)

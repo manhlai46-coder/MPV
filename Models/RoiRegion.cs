@@ -17,7 +17,10 @@ namespace MPV.Models
         public bool IsDetected { get; set; } = false;
         public string BarcodeText { get; set; } = "";
         public bool IsHidden { get; set; } = false;
+ 
         public BarcodeAlgorithm Algorithm { get; set; } = BarcodeAlgorithm.QRCode;
+
+
 
     }
 }

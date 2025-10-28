@@ -68,6 +68,7 @@ namespace MPV
             }
             cbbAlgorithm.DataSource = Enum.GetValues(typeof(MPV.Enums.BarcodeAlgorithm));
             cbbAlgorithm.Visible = false;
+            cbb_check.Visible = false;
         }
 
 
@@ -147,7 +148,8 @@ namespace MPV
                     pictureBox1.Invalidate();
                 }
             }
-            cbbAlgorithm.Visible = true;
+            cbbAlgorithm.Visible = false;
+            cbb_check.Visible = true;
         }
 
 
@@ -509,5 +511,13 @@ namespace MPV
                 fovManager.Save(fovList);
             }
         }
+
+        private void cbb_check_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
+            cbbAlgorithm.Visible = true;
+        }
+
     }
+
 }

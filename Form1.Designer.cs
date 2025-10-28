@@ -42,6 +42,7 @@
             this.btnAddFov = new System.Windows.Forms.Button();
             this.cbbAlgorithm = new System.Windows.Forms.ComboBox();
             this.propertyGrid1 = new System.Windows.Forms.PropertyGrid();
+            this.cbb_check = new System.Windows.Forms.ComboBox();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.contextMenuTree.SuspendLayout();
             this.SuspendLayout();
@@ -105,7 +106,6 @@
             this.btn_Exit.TabIndex = 6;
             this.btn_Exit.Text = "Exit";
             this.btn_Exit.UseVisualStyleBackColor = true;
-            this.btn_Exit.Click += new System.EventHandler(this.btn_Exit_Click);
             // 
             // btn_Update
             // 
@@ -161,7 +161,7 @@
             "PDF_417",
             "DATA_MATRIX",
             "AZTEC"});
-            this.cbbAlgorithm.Location = new System.Drawing.Point(842, 148);
+            this.cbbAlgorithm.Location = new System.Drawing.Point(826, 95);
             this.cbbAlgorithm.Name = "cbbAlgorithm";
             this.cbbAlgorithm.Size = new System.Drawing.Size(121, 21);
             this.cbbAlgorithm.TabIndex = 12;
@@ -174,11 +174,26 @@
             this.propertyGrid1.Size = new System.Drawing.Size(182, 130);
             this.propertyGrid1.TabIndex = 13;
             // 
+            // cbb_check
+            // 
+            this.cbb_check.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cbb_check.FormattingEnabled = true;
+            this.cbb_check.Items.AddRange(new object[] {
+            "Barcode",
+            "A",
+            "B"});
+            this.cbb_check.Location = new System.Drawing.Point(765, 145);
+            this.cbb_check.Name = "cbb_check";
+            this.cbb_check.Size = new System.Drawing.Size(121, 21);
+            this.cbb_check.TabIndex = 14;
+            this.cbb_check.SelectedIndexChanged += new System.EventHandler(this.cbb_check_SelectedIndexChanged);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(975, 503);
+            this.Controls.Add(this.cbb_check);
             this.Controls.Add(this.propertyGrid1);
             this.Controls.Add(this.cbbAlgorithm);
             this.Controls.Add(this.btnAddFov);
@@ -191,7 +206,7 @@
             this.Controls.Add(this.txt1);
             this.Controls.Add(this.pictureBox1);
             this.Name = "Form1";
-            this.Text = "Form1";
+            this.Text = " ";
             this.Load += new System.EventHandler(this.Form1_Load);
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             this.contextMenuTree.ResumeLayout(false);
@@ -215,6 +230,7 @@
         private System.Windows.Forms.Button btnAddFov;
         private System.Windows.Forms.ComboBox cbbAlgorithm;
         private System.Windows.Forms.PropertyGrid propertyGrid1;
+        private System.Windows.Forms.ComboBox cbb_check;
     }
 }
 
