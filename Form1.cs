@@ -565,7 +565,7 @@ namespace MPV
 
             if (roi == null) return;
 
-            // Create a TableLayoutPanel for organized layout
+          
             var tableLayout = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
