@@ -145,7 +145,7 @@ namespace MPV
                    
                     pictureBox1.Invalidate();
 
-                    // Show properties for the selected ROI in the panel
+                    
                     ShowRoiProperties(roiList[selectedRoiIndex]);
                 }
             }
@@ -211,10 +211,10 @@ namespace MPV
         {
             if (_bitmap == null) return;
 
-            // If not in draw mode, treat mouse up as a click: hit-test ROIs and show properties
+           
             if (!_drawMode)
             {
-                // Left-click: select ROI under cursor
+              
                 if (e.Button == MouseButtons.Left)
                 {
                     Rectangle imgRect = ImageHelper.GetDisplayedImageRectangle(pictureBox1);
@@ -234,7 +234,7 @@ namespace MPV
                         }
                         else
                         {
-                            // clicked outside any ROI
+                           
                             selectedRoiIndex = -1;
                             panelImage.Controls.Clear();
                             pictureBox1.Invalidate();
@@ -242,7 +242,7 @@ namespace MPV
                     }
                 }
 
-                // Right-click behavior (existing behavior left unchanged)
+          
                 if (e.Button == MouseButtons.Right)
                 {
                     TreeNode node = trv1.GetNodeAt(e.X, e.Y);
@@ -255,7 +255,7 @@ namespace MPV
                 return;
             }
 
-            // Existing draw/update ROI logic (unchanged)
+          
             if (_selectRectangle.Width == 0 || _selectRectangle.Height == 0) return;
 
             _isSelecting = false;
@@ -401,7 +401,7 @@ namespace MPV
                         pictureBox1.Invalidate();
                     }
 
-                    // clear panel when ROI removed
+                
                     panelImage.Controls.Clear();
                 }
             }
@@ -435,7 +435,7 @@ namespace MPV
 
                     pictureBox1.Invalidate();
 
-                    // clear panel when FOV removed
+               
                     panelImage.Controls.Clear();
                 }
             }
@@ -519,7 +519,7 @@ namespace MPV
                         string text = barcodeService.Decode(cropped, roi.Algorithm);
                         roi.IsDetected = !string.IsNullOrEmpty(text);
                         
-                        // Display barcode result in debug/log if needed
+                   
                         if (roi.IsDetected)
                         {
                             LoggerService.Info($"ROI detected barcode: {text}");
@@ -554,11 +554,7 @@ namespace MPV
 
         }
 
-        /// <summary>
-        /// Display all properties of a ROI inside the right-hand panel (panelImage).
-        /// Shows editable ComboBox for algorithm selection.
-        /// </summary>
-        /// <param name="roi">RoiRegion to show (can be null).</param>
+       
         private void ShowRoiProperties(RoiRegion roi)
         {
             panelImage.Controls.Clear();
@@ -577,14 +573,14 @@ namespace MPV
             tableLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120F));
             tableLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
 
-            // ROI Properties
+           
             AddPropertyRow(tableLayout, "X:", roi.X.ToString());
             AddPropertyRow(tableLayout, "Y:", roi.Y.ToString());
             AddPropertyRow(tableLayout, "Width:", roi.Width.ToString());
             AddPropertyRow(tableLayout, "Height:", roi.Height.ToString());
             AddPropertyRow(tableLayout, "IsDetected:", roi.IsDetected.ToString());
 
-            // Algorithm Selection ComboBox
+          
             var lblAlgorithm = new Label
             {
                 Text = "Algorithm:",
@@ -600,7 +596,7 @@ namespace MPV
                 Font = new Font("Segoe UI", 9F)
             };
 
-            // Populate ComboBox with all available algorithms
+          
             cboAlgorithm.Items.AddRange(new object[]
             {
                 BarcodeAlgorithm.QRCode,
@@ -614,10 +610,10 @@ namespace MPV
                 BarcodeAlgorithm.AZTEC
             });
 
-            // Set current algorithm
+          
             cboAlgorithm.SelectedItem = roi.Algorithm;
 
-            // Handle algorithm change
+            
             cboAlgorithm.SelectedIndexChanged += (s, e) =>
             {
                 if (selectedRoiIndex >= 0 && selectedRoiIndex < roiList.Count)
@@ -633,7 +629,7 @@ namespace MPV
             tableLayout.Controls.Add(lblAlgorithm, 0, tableLayout.RowCount - 1);
             tableLayout.Controls.Add(cboAlgorithm, 1, tableLayout.RowCount - 1);
 
-            // Add IsHidden checkbox
+           
             var chkHidden = new CheckBox
             {
                 Text = "Hidden",
@@ -660,9 +656,6 @@ namespace MPV
             panelImage.Controls.Add(tableLayout);
         }
 
-        /// <summary>
-        /// Helper method to add a property row to the table layout
-        /// </summary>
         private void AddPropertyRow(TableLayoutPanel table, string label, string value)
         {
             var lblProperty = new Label
