@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace MPV.Service
 {
-    internal class FovManager
+    public class FovManager
     {
         private readonly string _path;
         public FovManager(string path)

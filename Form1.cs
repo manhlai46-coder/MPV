@@ -33,7 +33,7 @@ namespace MPV
 
         private List<FovRegion> fovList = new List<FovRegion>();
         private List<RoiRegion> roiList = new List<RoiRegion>();
-
+        
         public Form1()
         {
             InitializeComponent();
@@ -110,6 +110,9 @@ namespace MPV
 
         private void trv1_AfterSelect(object sender, TreeViewEventArgs e)
         {
+            var propertyPanel = new RoiPropertyPanel(fovManager, fovList, pictureBox1, selectedFovIndex, selectedRoiIndex, roiList);
+           
+
             if (e.Node == null) return;
 
             if (e.Node.Text.StartsWith("FOV "))
@@ -145,8 +148,8 @@ namespace MPV
                    
                     pictureBox1.Invalidate();
 
-                    
-                    ShowRoiProperties(roiList[selectedRoiIndex]);
+
+                    propertyPanel.ShowRoiProperties(panelImage, roiList[selectedRoiIndex]);
                 }
             }
 
@@ -209,6 +212,9 @@ namespace MPV
 
         private void pictureBox1_MouseUp(object sender, MouseEventArgs e)
         {
+            var propertyPanel = new RoiPropertyPanel(fovManager, fovList, pictureBox1, selectedFovIndex, selectedRoiIndex, roiList);
+           
+
             if (_bitmap == null) return;
 
            
@@ -229,7 +235,8 @@ namespace MPV
                         if (foundIndex >= 0)
                         {
                             selectedRoiIndex = foundIndex;
-                            ShowRoiProperties(roiList[selectedRoiIndex]);
+
+                            propertyPanel.ShowRoiProperties(panelImage, roiList[selectedRoiIndex]);
                             pictureBox1.Invalidate();
                         }
                         else
@@ -539,6 +546,7 @@ namespace MPV
                 Application.DoEvents();
                 System.Threading.Thread.Sleep(500);
             }
+            fovManager.Save(fovList);
 
             if (anyBarcodeDetected)
             {
@@ -549,6 +557,7 @@ namespace MPV
                 MessageBox.Show("không đọc được barcode");
             }
             pictureBox1.Invalidate();
+            fovList = fovManager.Load();
             
 
         }
@@ -566,106 +575,7 @@ namespace MPV
         
 
        
-        private void ShowRoiProperties(RoiRegion roi)
-        {
-            panelImage.Controls.Clear();
-
-            if (roi == null) return;
-
-          
-            var tableLayout = new TableLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                ColumnCount = 2,
-                AutoSize = true,
-                Padding = new Padding(10)
-            };
-
-            tableLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120F));
-            tableLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-
-           
-            AddPropertyRow(tableLayout, "X:", roi.X.ToString());
-            AddPropertyRow(tableLayout, "Y:", roi.Y.ToString());
-            AddPropertyRow(tableLayout, "Width:", roi.Width.ToString());
-            AddPropertyRow(tableLayout, "Height:", roi.Height.ToString());
-            AddPropertyRow(tableLayout, "IsDetected:", roi.IsDetected.ToString());
-
-          
-            var lblAlgorithm = new Label
-            {
-                Text = "Algorithm:",
-                Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleLeft,
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold)
-            };
-
-            var cboAlgorithm = new ComboBox
-            {
-                Dock = DockStyle.Fill,
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                Font = new Font("Segoe UI", 9F)
-            };
-
-          
-            cboAlgorithm.Items.AddRange(new object[]
-            {
-                BarcodeAlgorithm.QRCode,
-                BarcodeAlgorithm.Code128,
-                BarcodeAlgorithm.EAN13,
-                BarcodeAlgorithm.DataMatrix,
-                BarcodeAlgorithm.CODE_39,
-                BarcodeAlgorithm.EAN_8,
-                BarcodeAlgorithm.UPC_A,
-                BarcodeAlgorithm.PDF_417,
-                BarcodeAlgorithm.AZTEC
-            });
-
-          
-            cboAlgorithm.SelectedItem = roi.Algorithm;
-
-            
-            cboAlgorithm.SelectedIndexChanged += (s, e) =>
-            {
-                if (selectedRoiIndex >= 0 && selectedRoiIndex < roiList.Count)
-                {
-                    roiList[selectedRoiIndex].Algorithm = (BarcodeAlgorithm)cboAlgorithm.SelectedItem;
-                    fovList[selectedFovIndex].Rois = roiList;
-                    fovManager.Save(fovList);
-                    LoggerService.Info($"Đã thay đổi thuật toán ROI {selectedRoiIndex + 1} thành {cboAlgorithm.SelectedItem}");
-                }
-            };
-
-            tableLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            tableLayout.Controls.Add(lblAlgorithm, 0, tableLayout.RowCount - 1);
-            tableLayout.Controls.Add(cboAlgorithm, 1, tableLayout.RowCount - 1);
-
-           
-            var chkHidden = new CheckBox
-            {
-                Text = "Hidden",
-                Checked = roi.IsHidden,
-                Dock = DockStyle.Fill,
-                Font = new Font("Segoe UI", 9F)
-            };
-
-            chkHidden.CheckedChanged += (s, e) =>
-            {
-                if (selectedRoiIndex >= 0 && selectedRoiIndex < roiList.Count)
-                {
-                    roiList[selectedRoiIndex].IsHidden = chkHidden.Checked;
-                    fovList[selectedFovIndex].Rois = roiList;
-                    fovManager.Save(fovList);
-                    pictureBox1.Invalidate();
-                }
-            };
-
-            tableLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            tableLayout.Controls.Add(new Label { Text = "IsHidden:", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, Font = new Font("Segoe UI", 9F, FontStyle.Bold) }, 0, tableLayout.RowCount - 1);
-            tableLayout.Controls.Add(chkHidden, 1, tableLayout.RowCount - 1);
-
-            panelImage.Controls.Add(tableLayout);
-        }
+       
 
         private void AddPropertyRow(TableLayoutPanel table, string label, string value)
         {

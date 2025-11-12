@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MPV.Models
 {
-    internal class FovRegion
+    public class FovRegion
     {
         public string ImagePath { get; set; }
 

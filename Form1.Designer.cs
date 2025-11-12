@@ -139,15 +139,14 @@
             // 
             this.panelImage.Location = new System.Drawing.Point(761, 22);
             this.panelImage.Name = "panelImage";
-            this.panelImage.Size = new System.Drawing.Size(200, 248);
+            this.panelImage.Size = new System.Drawing.Size(352, 248);
             this.panelImage.TabIndex = 12;
-
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(975, 503);
+            this.ClientSize = new System.Drawing.Size(1390, 634);
             this.Controls.Add(this.panelImage);
             this.Controls.Add(this.btnAddFov);
             this.Controls.Add(this.btnDrawRoi);
