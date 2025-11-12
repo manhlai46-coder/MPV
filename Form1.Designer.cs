@@ -141,7 +141,7 @@
             this.panelImage.Name = "panelImage";
             this.panelImage.Size = new System.Drawing.Size(200, 248);
             this.panelImage.TabIndex = 12;
-            this.panelImage.Paint += new System.Windows.Forms.PaintEventHandler(this.panelImage_Paint);
+
             // 
             // Form1
             // 

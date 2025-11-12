@@ -497,6 +497,9 @@ namespace MPV
                 return;
             }
 
+            string detectedBarcodeContent = ""; // Store the detected barcode content here.
+            bool anyBarcodeDetected = false; // Flag to check if any barcode is detected.
+
             foreach (var fov in fovList)
             {
                 if (fov.IsHidden) continue;
@@ -518,10 +521,11 @@ namespace MPV
                     {
                         string text = barcodeService.Decode(cropped, roi.Algorithm);
                         roi.IsDetected = !string.IsNullOrEmpty(text);
-                        
-                   
+
                         if (roi.IsDetected)
                         {
+                            detectedBarcodeContent = text; // Store the detected barcode content
+                            anyBarcodeDetected = true; // Mark that a barcode has been detected
                             LoggerService.Info($"ROI detected barcode: {text}");
                         }
                     }
@@ -533,10 +537,20 @@ namespace MPV
                 pictureBox1.Invalidate();
 
                 Application.DoEvents();
-                System.Threading.Thread.Sleep(500); 
+                System.Threading.Thread.Sleep(500);
             }
 
-            MessageBox.Show("Đã hoàn thành dịch barcode.");
+            if (anyBarcodeDetected)
+            {
+                MessageBox.Show(detectedBarcodeContent);
+            }
+            else
+            {
+                MessageBox.Show("không đọc được barcode");
+            }
+            pictureBox1.Invalidate();
+            
+
         }
 
 
@@ -549,10 +563,7 @@ namespace MPV
             Application.Exit();
         }
 
-        private void panelImage_Paint(object sender, PaintEventArgs e)
-        {
-
-        }
+        
 
        
         private void ShowRoiProperties(RoiRegion roi)

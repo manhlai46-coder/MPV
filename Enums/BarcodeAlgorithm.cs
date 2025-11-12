@@ -8,19 +8,15 @@ namespace MPV.Enums
 {
     public enum BarcodeAlgorithm
     {
-        QR_CODE,
-        CODE_128,
-        CODE_39,
-        EAN_13,
-        EAN_8,
-        UPC_A,
-        PDF_417,
-        DATA_MATRIX,
-        AZTEC,
         QRCode,
         Code128,
         EAN13,
-        DataMatrix
+        DataMatrix,
+        CODE_39,
+        EAN_8,
+        UPC_A,
+        AZTEC,
+        PDF_417
     }
 
 }
