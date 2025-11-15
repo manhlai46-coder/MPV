@@ -19,7 +19,6 @@ namespace MPV
         private readonly RoiRenderer roiRenderer;
         private ContextMenuStrip contextMenu;
 
-
         private Bitmap _bitmap;
         private Rectangle _selectRectangle;
         private Point _startPoint;
@@ -33,7 +32,7 @@ namespace MPV
 
         private List<FovRegion> fovList = new List<FovRegion>();
         private List<RoiRegion> roiList = new List<RoiRegion>();
-        
+
         public Form1()
         {
             InitializeComponent();
@@ -43,16 +42,16 @@ namespace MPV
             barcodeService = new BarcodeService();
             roiRenderer = new RoiRenderer(pictureBox1);
         }
+
         private void InitializeContextMenu()
         {
             contextMenu = new ContextMenuStrip();
             var deleteItem = new ToolStripMenuItem("Xóa");
-            deleteItem.Click += MenuDelete_Click; 
+            deleteItem.Click += MenuDelete_Click;
             contextMenu.Items.Add(deleteItem);
 
             trv1.ContextMenuStrip = contextMenu;
         }
-
 
         private void Form1_Load(object sender, EventArgs e)
         {
@@ -66,10 +65,7 @@ namespace MPV
                 MessageBox.Show("Lỗi khi load JSON: " + ex.Message);
                 LoggerService.Error("Error loading JSON", ex);
             }
-            
         }
-
-
 
         private void LoadFovToTreeView()
         {
@@ -79,6 +75,9 @@ namespace MPV
             if (fovList.Count == 0)
             {
                 trv1.Nodes.Add("Chưa có FOV nào được lưu.");
+                _bitmap = null;
+                pictureBox1.Image = null;
+                roiList.Clear();
                 return;
             }
 
@@ -89,7 +88,7 @@ namespace MPV
                 var fov = fovList[i];
                 var fovNode = new TreeNode($"FOV {i + 1}");
                 fovNode.Nodes.Add($"Image: {Path.GetFileName(fov.ImagePath)}");
-   
+
                 for (int j = 0; j < fov.Rois.Count; j++)
                 {
                     var roi = fov.Rois[j];
@@ -110,11 +109,9 @@ namespace MPV
 
         private void trv1_AfterSelect(object sender, TreeViewEventArgs e)
         {
-            var propertyPanel = new RoiPropertyPanel(fovManager, fovList, pictureBox1, selectedFovIndex, selectedRoiIndex, roiList);
-           
-
             if (e.Node == null) return;
 
+            // Nếu chọn FOV
             if (e.Node.Text.StartsWith("FOV "))
             {
                 if (!int.TryParse(e.Node.Text.Replace("FOV ", ""), out int fovIndex)) return;
@@ -133,32 +130,39 @@ namespace MPV
                         _showRoiOnImage = true;
                         pictureBox1.Invalidate();
                     }
-                    
-                   
+                    else
+                    {
+                        pictureBox1.Image = null;
+                        _bitmap = null;
+                        roiList = new List<RoiRegion>();
+                        _showRoiOnImage = false;
+                        pictureBox1.Invalidate();
+                    }
                 }
+                panelImage.Controls.Clear();
             }
+            // Nếu chọn ROI (con node)
             else if (e.Node.Text.StartsWith("ROI "))
             {
                 if (!int.TryParse(e.Node.Text.Replace("ROI ", ""), out int roiIndex)) return;
                 selectedRoiIndex = roiIndex - 1;
 
+                // Ensure fov and roi lists are in sync
+                if (selectedFovIndex >= 0 && selectedFovIndex < fovList.Count)
+                {
+                    roiList = fovList[selectedFovIndex].Rois;
+                }
+
                 if (selectedRoiIndex >= 0 && selectedRoiIndex < roiList.Count)
                 {
-                   
-                   
                     pictureBox1.Invalidate();
 
-
+                    // Create panel after indices updated so panel receives correct indices & lists
+                    var propertyPanel = new RoiPropertyPanel(fovManager, fovList, pictureBox1, selectedFovIndex, selectedRoiIndex, roiList);
                     propertyPanel.ShowRoiProperties(panelImage, roiList[selectedRoiIndex]);
                 }
             }
-
-           
         }
-
-
-
-
 
         private void btnDrawRoi_Click(object sender, EventArgs e)
         {
@@ -212,15 +216,12 @@ namespace MPV
 
         private void pictureBox1_MouseUp(object sender, MouseEventArgs e)
         {
-            var propertyPanel = new RoiPropertyPanel(fovManager, fovList, pictureBox1, selectedFovIndex, selectedRoiIndex, roiList);
-           
-
+            // ONLY create property panel when needed (after indices are set)
             if (_bitmap == null) return;
 
-           
+            // If not in draw mode -> click to select ROI or show context menu
             if (!_drawMode)
             {
-              
                 if (e.Button == MouseButtons.Left)
                 {
                     Rectangle imgRect = ImageHelper.GetDisplayedImageRectangle(pictureBox1);
@@ -236,12 +237,13 @@ namespace MPV
                         {
                             selectedRoiIndex = foundIndex;
 
+                            // create property panel AFTER selectedRoiIndex updated
+                            var propertyPanel = new RoiPropertyPanel(fovManager, fovList, pictureBox1, selectedFovIndex, selectedRoiIndex, roiList);
                             propertyPanel.ShowRoiProperties(panelImage, roiList[selectedRoiIndex]);
                             pictureBox1.Invalidate();
                         }
                         else
                         {
-                           
                             selectedRoiIndex = -1;
                             panelImage.Controls.Clear();
                             pictureBox1.Invalidate();
@@ -249,9 +251,11 @@ namespace MPV
                     }
                 }
 
-          
                 if (e.Button == MouseButtons.Right)
                 {
+                    // Right click in picture to map to tree node isn't reliable - you'll probably want to
+                    // show context menu for the picture. Keep existing behavior but don't use picture coords for tree.
+                    // If user right-clicked on picture and expects to select a node, keep current behavior.
                     TreeNode node = trv1.GetNodeAt(e.X, e.Y);
                     if (node != null)
                     {
@@ -262,8 +266,12 @@ namespace MPV
                 return;
             }
 
-          
-            if (_selectRectangle.Width == 0 || _selectRectangle.Height == 0) return;
+            // If in draw mode -> finish drawing ROI
+            if (_selectRectangle.Width == 0 || _selectRectangle.Height == 0)
+            {
+                // reset draw mode but keep user in draw mode? original toggles off in end; keep original behavior
+                return;
+            }
 
             _isSelecting = false;
 
@@ -281,9 +289,6 @@ namespace MPV
             realW = Math.Min(realW, _bitmap.Width - realX);
             realH = Math.Min(realH, _bitmap.Height - realY);
 
-            var realRect = new Rectangle(realX, realY, realW, realH);
-            var cropped = CropBitmap(_bitmap, realRect);
-
             if (_isUpdatingRoi && selectedRoiIndex >= 0)
             {
                 var roi = roiList[selectedRoiIndex];
@@ -292,8 +297,10 @@ namespace MPV
                 roi.Width = realW;
                 roi.Height = realH;
 
+                // Save and reload
                 fovList[selectedFovIndex].Rois = roiList;
                 fovManager.Save(fovList);
+                ReloadFovListAndRefresh(selectedFovIndex);
 
                 MessageBox.Show($"Đã cập nhật ROI {selectedRoiIndex + 1} trong FOV {selectedFovIndex + 1}.");
                 _isUpdatingRoi = false;
@@ -308,9 +315,14 @@ namespace MPV
                     Height = realH
                 };
                 fovList[selectedFovIndex].Rois.Add(roi);
+
+                // Save and reload
                 fovManager.Save(fovList);
+                ReloadFovListAndRefresh(selectedFovIndex);
+
                 MessageBox.Show($"Đã thêm ROI vào FOV {selectedFovIndex + 1}");
             }
+
             if (e.Button == MouseButtons.Right)
             {
                 TreeNode node = trv1.GetNodeAt(e.X, e.Y);
@@ -319,6 +331,7 @@ namespace MPV
                     trv1.SelectedNode = node;
                 }
             }
+
             _drawMode = false;
             btnDrawRoi.Text = "Vẽ ROI";
             btnDrawRoi.BackColor = SystemColors.Control;
@@ -337,7 +350,6 @@ namespace MPV
             }
             return cropped;
         }
-        
 
         private void pictureBox1_Paint(object sender, PaintEventArgs e)
         {
@@ -387,6 +399,7 @@ namespace MPV
         {
             if (trv1.SelectedNode == null) return;
 
+            // Delete ROI
             if (trv1.SelectedNode.Text.StartsWith("ROI ") && selectedFovIndex >= 0 && selectedRoiIndex >= 0)
             {
                 var confirm = MessageBox.Show($"Xóa ROI {selectedRoiIndex + 1} trong FOV {selectedFovIndex + 1}?", "Xác nhận", MessageBoxButtons.YesNo);
@@ -394,24 +407,24 @@ namespace MPV
                 {
                     fovList[selectedFovIndex].Rois.RemoveAt(selectedRoiIndex);
                     fovManager.Save(fovList);
-                    roiList = fovList[selectedFovIndex].Rois;
-                    selectedRoiIndex = -1;
-                  
 
+                    // reload and refresh
+                    ReloadFovListAndRefresh(selectedFovIndex);
+
+                    selectedRoiIndex = -1;
+                    panelImage.Controls.Clear();
                     LoadFovToTreeView();
 
-                    if (File.Exists(fovList[selectedFovIndex].ImagePath))
+                    if (selectedFovIndex >= 0 && selectedFovIndex < fovList.Count && File.Exists(fovList[selectedFovIndex].ImagePath))
                     {
                         _bitmap = new Bitmap(fovList[selectedFovIndex].ImagePath);
                         pictureBox1.Image = _bitmap;
                         _showRoiOnImage = true;
                         pictureBox1.Invalidate();
                     }
-
-                
-                    panelImage.Controls.Clear();
                 }
             }
+            // Delete FOV
             else if (trv1.SelectedNode.Text.StartsWith("FOV ") && selectedFovIndex >= 0)
             {
                 var confirm = MessageBox.Show($"Xóa FOV {selectedFovIndex + 1}?", "Xác nhận", MessageBoxButtons.YesNo);
@@ -419,11 +432,8 @@ namespace MPV
                 {
                     fovList.RemoveAt(selectedFovIndex);
                     fovManager.Save(fovList);
-                    selectedFovIndex = -1;
-                    selectedRoiIndex = -1;
-                    roiList.Clear();
-                  
 
+                    // reload
                     LoadFovToTreeView();
 
                     if (fovList.Count > 0)
@@ -436,21 +446,18 @@ namespace MPV
                     }
                     else
                     {
+                        selectedFovIndex = -1;
+                        selectedRoiIndex = -1;
                         pictureBox1.Image = null;
                         _bitmap = null;
+                        roiList.Clear();
                     }
 
                     pictureBox1.Invalidate();
-
-               
                     panelImage.Controls.Clear();
                 }
             }
         }
-
-
-
-
 
         private void btn_Exit_Click(object sender, EventArgs e)
         {
@@ -471,8 +478,9 @@ namespace MPV
                     };
 
                     fovManager.Add(newFov);
-                    LoadFovToTreeView();
 
+                    // reload and select newest
+                    LoadFovToTreeView();
                     fovList = fovManager.Load();
                     selectedFovIndex = fovList.Count - 1;
                     roiList = fovList[selectedFovIndex].Rois;
@@ -489,10 +497,7 @@ namespace MPV
                     MessageBox.Show("Đã thêm FOV mới với ảnh: " + Path.GetFileName(ofd.FileName));
                 }
             }
-
         }
-
-
 
         private void btnrun_Click_1(object sender, EventArgs e)
         {
@@ -504,8 +509,8 @@ namespace MPV
                 return;
             }
 
-            string detectedBarcodeContent = ""; // Store the detected barcode content here.
-            bool anyBarcodeDetected = false; // Flag to check if any barcode is detected.
+            string detectedBarcodeContent = "";
+            bool anyBarcodeDetected = false;
 
             foreach (var fov in fovList)
             {
@@ -531,8 +536,8 @@ namespace MPV
 
                         if (roi.IsDetected)
                         {
-                            detectedBarcodeContent = text; // Store the detected barcode content
-                            anyBarcodeDetected = true; // Mark that a barcode has been detected
+                            detectedBarcodeContent = text;
+                            anyBarcodeDetected = true;
                             LoggerService.Info($"ROI detected barcode: {text}");
                         }
                     }
@@ -558,24 +563,12 @@ namespace MPV
             }
             pictureBox1.Invalidate();
             fovList = fovManager.Load();
-            
-
         }
-
-
-
-      
-
 
         private void btn_Exit_Click_1(object sender, EventArgs e)
         {
             Application.Exit();
         }
-
-        
-
-       
-       
 
         private void AddPropertyRow(TableLayoutPanel table, string label, string value)
         {
@@ -600,6 +593,51 @@ namespace MPV
             table.Controls.Add(lblProperty, 0, table.RowCount - 1);
             table.Controls.Add(txtValue, 1, table.RowCount - 1);
         }
-    }
 
+        /// <summary>
+        /// Load fovList from disk and keep UI state roughly consistent.
+        /// </summary>
+        private void ReloadFovListAndRefresh(int keepFovIndex)
+        {
+            // reload
+            fovList = fovManager.Load();
+
+            // clamp keepFovIndex
+            if (fovList.Count == 0)
+            {
+                selectedFovIndex = -1;
+                selectedRoiIndex = -1;
+                roiList.Clear();
+                _bitmap = null;
+                pictureBox1.Image = null;
+                LoadFovToTreeView();
+                return;
+            }
+
+            if (keepFovIndex < 0) keepFovIndex = 0;
+            if (keepFovIndex >= fovList.Count) keepFovIndex = fovList.Count - 1;
+
+            selectedFovIndex = keepFovIndex;
+            roiList = fovList[selectedFovIndex].Rois;
+
+            // refresh image if exists
+            if (File.Exists(fovList[selectedFovIndex].ImagePath))
+            {
+                _bitmap = new Bitmap(fovList[selectedFovIndex].ImagePath);
+                pictureBox1.Image = _bitmap;
+                pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+                _showRoiOnImage = true;
+            }
+            else
+            {
+                _bitmap = null;
+                pictureBox1.Image = null;
+                _showRoiOnImage = false;
+            }
+
+            LoadFovToTreeView();
+            pictureBox1.Invalidate();
+            panelImage.Controls.Clear();
+        }
+    }
 }

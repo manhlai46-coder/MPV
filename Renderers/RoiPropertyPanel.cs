@@ -102,6 +102,7 @@ namespace MPV.Renderers
                 AddPropertyRow(innerTable, "IsDetected:", roi.IsDetected.ToString());
 
                 // Algorithm
+                // Algorithm
                 var lblAlgorithm = new Label
                 {
                     Text = "Algorithm:",
@@ -130,23 +131,31 @@ namespace MPV.Renderers
                     BarcodeAlgorithm.AZTEC
                 });
 
+                
                 cboAlgorithm.SelectedItem = roi.Algorithm;
                 cboAlgorithm.SelectedIndexChanged += (s, e) =>
                 {
                     if (selectedRoiIndex >= 0 && selectedRoiIndex < roiList.Count)
                     {
                         roiList[selectedRoiIndex].Algorithm = (BarcodeAlgorithm)cboAlgorithm.SelectedItem;
+
                         fovList[selectedFovIndex].Rois = roiList;
                         fovManager.Save(fovList);
+
+                        var newFovList = fovManager.Load();
+                        fovList.Clear();
+                        fovList.AddRange(newFovList);
+
                         LoggerService.Info($"Đã thay đổi thuật toán ROI {selectedRoiIndex + 1} thành {cboAlgorithm.SelectedItem}");
                     }
                 };
 
+                int algoRow = innerTable.RowCount++;
                 innerTable.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-                innerTable.Controls.Add(lblAlgorithm, 0, innerTable.RowCount - 1);
-                innerTable.Controls.Add(cboAlgorithm, 1, innerTable.RowCount - 1);
+                innerTable.Controls.Add(lblAlgorithm, 0, algoRow);
+                innerTable.Controls.Add(cboAlgorithm, 1, algoRow);
 
-                // Hidden checkbox
+
                 var chkHidden = new CheckBox
                 {
                     Text = "Hidden",
@@ -154,22 +163,30 @@ namespace MPV.Renderers
                     Dock = DockStyle.Fill,
                     Font = new Font("Segoe UI", 9F)
                 };
+
                 chkHidden.CheckedChanged += (s, e) =>
                 {
-                    if (selectedRoiIndex >= 0 && selectedRoiIndex < roiList.Count)
-                    {
-                        roiList[selectedRoiIndex].IsHidden = chkHidden.Checked;
-                        fovList[selectedFovIndex].Rois = roiList;
-                        fovManager.Save(fovList);
-                        pictureBox.Invalidate();
-                    }
+                    roi.IsHidden = chkHidden.Checked;
+
+                    roiList[selectedRoiIndex] = roi;
+                    fovList[selectedFovIndex].Rois = roiList;
+
+                    fovManager.Save(fovList);
+                    pictureBox.Invalidate();
                 };
 
+                int hiddenRow = innerTable.RowCount++;
                 innerTable.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-                innerTable.Controls.Add(new Label { Text = "IsHidden:", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, Font = new Font("Segoe UI", 9F, FontStyle.Bold) }, 0, innerTable.RowCount - 1);
-                innerTable.Controls.Add(chkHidden, 1, innerTable.RowCount - 1);
+                innerTable.Controls.Add(new Label
+                {
+                    Text = "IsHidden:",
+                    Dock = DockStyle.Fill,
+                    TextAlign = ContentAlignment.MiddleLeft,
+                    Font = new Font("Segoe UI", 9F, FontStyle.Bold)
+                }, 0, hiddenRow);
 
-                panelModeContent.Controls.Add(innerTable);
+                innerTable.Controls.Add(chkHidden, 1, hiddenRow);
+
             }
 
             // --- Placeholder HSV ---

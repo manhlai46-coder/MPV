@@ -11,6 +11,7 @@ namespace MPV.Services
             var reader = new BarcodeReaderGeneric
             {
                 AutoRotate = false, 
+                
                 TryInverted = false,
                 Options = new ZXing.Common.DecodingOptions
                 {
