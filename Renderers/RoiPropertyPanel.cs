@@ -40,11 +40,14 @@ namespace MPV.Renderers
                 Dock = DockStyle.Fill,
                 ColumnCount = 2,
                 AutoSize = true,
-                Padding = new Padding(10)
+                Padding = new Padding(10),
+                RowCount = 2
             };
 
             tableLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120F));
             tableLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            tableLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            tableLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
             // --- Combobox chọn Mode ---
             var lblMode = new Label
@@ -71,7 +74,8 @@ namespace MPV.Renderers
             var panelModeContent = new Panel
             {
                 Dock = DockStyle.Fill,
-                AutoScroll = true
+                AutoScroll = true,
+                BackColor = Color.White
             };
 
             tableLayout.Controls.Add(panelModeContent, 0, 1);
@@ -89,7 +93,8 @@ namespace MPV.Renderers
                     Dock = DockStyle.Top,
                     ColumnCount = 2,
                     AutoSize = true,
-                    Padding = new Padding(5)
+                    Padding = new Padding(5),
+                    BackColor = Color.White
                 };
 
                 innerTable.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120F));
@@ -101,7 +106,6 @@ namespace MPV.Renderers
                 AddPropertyRow(innerTable, "Height:", roi.Height.ToString());
                 AddPropertyRow(innerTable, "IsDetected:", roi.IsDetected.ToString());
 
-                // Algorithm
                 // Algorithm
                 var lblAlgorithm = new Label
                 {
@@ -131,14 +135,12 @@ namespace MPV.Renderers
                     BarcodeAlgorithm.AZTEC
                 });
 
-                
                 cboAlgorithm.SelectedItem = roi.Algorithm;
                 cboAlgorithm.SelectedIndexChanged += (s, e) =>
                 {
                     if (selectedRoiIndex >= 0 && selectedRoiIndex < roiList.Count)
                     {
                         roiList[selectedRoiIndex].Algorithm = (BarcodeAlgorithm)cboAlgorithm.SelectedItem;
-
                         fovList[selectedFovIndex].Rois = roiList;
                         fovManager.Save(fovList);
 
@@ -150,12 +152,13 @@ namespace MPV.Renderers
                     }
                 };
 
-                int algoRow = innerTable.RowCount++;
+                int algoRow = innerTable.RowCount;
                 innerTable.RowStyles.Add(new RowStyle(SizeType.AutoSize));
                 innerTable.Controls.Add(lblAlgorithm, 0, algoRow);
                 innerTable.Controls.Add(cboAlgorithm, 1, algoRow);
+                innerTable.RowCount++;
 
-
+                // IsHidden checkbox
                 var chkHidden = new CheckBox
                 {
                     Text = "Hidden",
@@ -167,15 +170,13 @@ namespace MPV.Renderers
                 chkHidden.CheckedChanged += (s, e) =>
                 {
                     roi.IsHidden = chkHidden.Checked;
-
                     roiList[selectedRoiIndex] = roi;
                     fovList[selectedFovIndex].Rois = roiList;
-
                     fovManager.Save(fovList);
                     pictureBox.Invalidate();
                 };
 
-                int hiddenRow = innerTable.RowCount++;
+                int hiddenRow = innerTable.RowCount;
                 innerTable.RowStyles.Add(new RowStyle(SizeType.AutoSize));
                 innerTable.Controls.Add(new Label
                 {
@@ -184,9 +185,11 @@ namespace MPV.Renderers
                     TextAlign = ContentAlignment.MiddleLeft,
                     Font = new Font("Segoe UI", 9F, FontStyle.Bold)
                 }, 0, hiddenRow);
-
                 innerTable.Controls.Add(chkHidden, 1, hiddenRow);
+                innerTable.RowCount++;
 
+                // QUAN TRỌNG: Add innerTable vào panelModeContent
+                panelModeContent.Controls.Add(innerTable);
             }
 
             // --- Placeholder HSV ---
@@ -220,7 +223,7 @@ namespace MPV.Renderers
         // Helper: tạo dòng Label + Text
         private void AddPropertyRow(TableLayoutPanel table, string label, string value)
         {
-            int row = table.RowCount++;
+            int row = table.RowCount;
 
             var lbl = new Label
             {
@@ -235,12 +238,14 @@ namespace MPV.Renderers
                 Text = value,
                 Dock = DockStyle.Fill,
                 ReadOnly = true,
+                BorderStyle = BorderStyle.FixedSingle,
                 Font = new Font("Segoe UI", 9F)
             };
 
             table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             table.Controls.Add(lbl, 0, row);
             table.Controls.Add(txt, 1, row);
+            table.RowCount++;
         }
     }
 }
