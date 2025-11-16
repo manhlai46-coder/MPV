@@ -16,7 +16,6 @@ namespace MPV.Renderers
             _pictureBox = pictureBox ?? throw new ArgumentNullException(nameof(pictureBox));
         }
 
-        
         public void DrawSelection(Graphics g, Rectangle selectionRect)
         {
             if (selectionRect.Width <= 0 || selectionRect.Height <= 0)
@@ -29,7 +28,6 @@ namespace MPV.Renderers
             }
         }
 
-        
         public void DrawRois(Graphics g, List<RoiRegion> roiList, Bitmap bitmap, int selectedIndex, bool showResults)
         {
             if (roiList == null || bitmap == null) return;
@@ -48,18 +46,29 @@ namespace MPV.Renderers
                     (int)(roi.Height * scaleY)
                 );
 
-                Color color = roi.IsDetected ? Color.LimeGreen : Color.Red;
-                if (i == selectedIndex)
-                    color = Color.Orange;
+                // Vì đã bỏ IsDetected khỏi RoiRegion, ta xác định màu theo Mode + dữ liệu hiện có
+                Color baseColor;
+                if (roi.Mode == "HSV")
+                {
+                    // Nếu đã auto tính Lower/Upper thì coi như "đã sẵn sàng" -> xanh lá
+                    baseColor = (roi.Lower != null && roi.Upper != null) ? Color.LimeGreen : Color.Red;
+                }
+                else // Barcode mode
+                {
+                    // Không còn IsDetected, hiển thị mặc định đỏ (có thể sửa sau nếu cần lưu trạng thái tạm)
+                    baseColor = Color.Red;
+                }
 
-                using (Pen pen = new Pen(color, (i == selectedIndex) ? 3 : 2))
+                if (i == selectedIndex)
+                    baseColor = Color.Orange;
+
+                using (Pen pen = new Pen(baseColor, (i == selectedIndex) ? 3 : 2))
                 {
                     g.DrawRectangle(pen, displayRect);
                 }
 
-              
                 using (Font font = new Font("Arial", 9, FontStyle.Bold))
-                using (SolidBrush brush = new SolidBrush(color))
+                using (SolidBrush brush = new SolidBrush(baseColor))
                 {
                     g.DrawString($"ROI {i + 1}", font, brush, displayRect.X, displayRect.Y - 18);
                 }

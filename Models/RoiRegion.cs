@@ -14,9 +14,16 @@ namespace MPV.Models
         public int Y { get; set; }
         public int Width { get; set; }
         public int Height { get; set; }
-        public bool IsDetected { get; set; } = false;
         public bool IsHidden { get; set; } = false;
- 
-        public BarcodeAlgorithm Algorithm { get; set; } = BarcodeAlgorithm.QRCode;
+
+        // Mode: "Barcode" hoặc "HSV"
+        public string Mode { get; set; } = "Barcode";
+
+        // Transient barcode settings (not persisted if you wish – remove if not needed)
+        public BarcodeAlgorithm? Algorithm { get; set; } = BarcodeAlgorithm.QRCode;
+
+        // HSV automatic thresholds (only used when Mode == "HSV")
+        public HsvValue Lower { get; set; }
+        public HsvValue Upper { get; set; }
     }
 }

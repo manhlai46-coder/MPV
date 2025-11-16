@@ -2,10 +2,10 @@
 using System.Drawing;
 using System.Windows.Forms;
 using MPV.Models;
-using MPV.Services;
-using MPV.Enums;
 using System.Collections.Generic;
 using MPV.Service;
+using MPV.Enums;
+using MPV.Services;
 
 namespace MPV.Renderers
 {
@@ -14,16 +14,25 @@ namespace MPV.Renderers
         private readonly FovManager fovManager;
         private readonly List<FovRegion> fovList;
         private readonly PictureBox pictureBox;
+        private readonly Bitmap currentFovBitmap;
         private int selectedRoiIndex;
         private int selectedFovIndex;
-        private List<RoiRegion> roiList;
+        private readonly List<RoiRegion> roiList;
+        private readonly HsvAutoService hsvAutoService = new HsvAutoService();
 
-        public RoiPropertyPanel(FovManager fovManager, List<FovRegion> fovList, PictureBox pictureBox,
-                                int selectedFovIndex, int selectedRoiIndex, List<RoiRegion> roiList)
+        public RoiPropertyPanel(
+            FovManager fovManager,
+            List<FovRegion> fovList,
+            PictureBox pictureBox,
+            Bitmap currentFovBitmap,
+            int selectedFovIndex,
+            int selectedRoiIndex,
+            List<RoiRegion> roiList)
         {
             this.fovManager = fovManager;
             this.fovList = fovList;
             this.pictureBox = pictureBox;
+            this.currentFovBitmap = currentFovBitmap;
             this.selectedFovIndex = selectedFovIndex;
             this.selectedRoiIndex = selectedRoiIndex;
             this.roiList = roiList;
@@ -32,97 +41,54 @@ namespace MPV.Renderers
         public void ShowRoiProperties(Panel panelImage, RoiRegion roi)
         {
             panelImage.Controls.Clear();
-
             if (roi == null) return;
 
-            var tableLayout = new TableLayoutPanel
+            var root = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 2,
                 AutoSize = true,
-                Padding = new Padding(10),
-                RowCount = 2
+                Padding = new Padding(10)
             };
+            root.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120F));
+            root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
 
-            tableLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120F));
-            tableLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-            tableLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            tableLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-
-            // --- Combobox chọn Mode ---
-            var lblMode = new Label
-            {
-                Text = "Mode:",
-                Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleLeft,
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold)
-            };
-
+            // Mode selector
+            var lblMode = CreateLabel("Mode:");
             var cboMode = new ComboBox
             {
                 Dock = DockStyle.Fill,
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                Font = new Font("Segoe UI", 9F)
+                DropDownStyle = ComboBoxStyle.DropDownList
             };
             cboMode.Items.AddRange(new object[] { "Barcode", "HSV" });
-            cboMode.SelectedIndex = 0;
+            cboMode.SelectedItem = roi.Mode ?? "Barcode";
+            root.Controls.Add(lblMode, 0, 0);
+            root.Controls.Add(cboMode, 1, 0);
 
-            tableLayout.Controls.Add(lblMode, 0, 0);
-            tableLayout.Controls.Add(cboMode, 1, 0);
-
-            // --- Panel nội dung ---
-            var panelModeContent = new Panel
+            // Main content panel
+            var panelContent = new Panel
             {
                 Dock = DockStyle.Fill,
-                AutoScroll = true,
-                BackColor = Color.White
+                AutoScroll = true
             };
+            root.Controls.Add(panelContent, 0, 1);
+            root.SetColumnSpan(panelContent, 2);
 
-            tableLayout.Controls.Add(panelModeContent, 0, 1);
-            tableLayout.SetColumnSpan(panelModeContent, 2);
+            panelImage.Controls.Add(root);
 
-            panelImage.Controls.Add(tableLayout);
-
-            // --- Hiển thị Barcode Info ---
-            void ShowBarcodeInfo()
+            void RenderBarcode()
             {
-                panelModeContent.Controls.Clear();
+                panelContent.Controls.Clear();
+                var t = CreateInnerTable();
+                AddReadOnlyRow(t, "X", roi.X.ToString());
+                AddReadOnlyRow(t, "Y", roi.Y.ToString());
+                AddReadOnlyRow(t, "Width", roi.Width.ToString());
+                AddReadOnlyRow(t, "Height", roi.Height.ToString());
 
-                var innerTable = new TableLayoutPanel
-                {
-                    Dock = DockStyle.Top,
-                    ColumnCount = 2,
-                    AutoSize = true,
-                    Padding = new Padding(5),
-                    BackColor = Color.White
-                };
-
-                innerTable.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120F));
-                innerTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-
-                AddPropertyRow(innerTable, "X:", roi.X.ToString());
-                AddPropertyRow(innerTable, "Y:", roi.Y.ToString());
-                AddPropertyRow(innerTable, "Width:", roi.Width.ToString());
-                AddPropertyRow(innerTable, "Height:", roi.Height.ToString());
-                AddPropertyRow(innerTable, "IsDetected:", roi.IsDetected.ToString());
-
-                // Algorithm
-                var lblAlgorithm = new Label
-                {
-                    Text = "Algorithm:",
-                    Dock = DockStyle.Fill,
-                    TextAlign = ContentAlignment.MiddleLeft,
-                    Font = new Font("Segoe UI", 9F, FontStyle.Bold)
-                };
-
-                var cboAlgorithm = new ComboBox
-                {
-                    Dock = DockStyle.Fill,
-                    DropDownStyle = ComboBoxStyle.DropDownList,
-                    Font = new Font("Segoe UI", 9F)
-                };
-
-                cboAlgorithm.Items.AddRange(new object[]
+                // Algorithm combo
+                var lblAlg = CreateLabel("Algorithm:");
+                var cboAlg = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList };
+                cboAlg.Items.AddRange(new object[]
                 {
                     BarcodeAlgorithm.QRCode,
                     BarcodeAlgorithm.Code128,
@@ -134,118 +100,161 @@ namespace MPV.Renderers
                     BarcodeAlgorithm.PDF_417,
                     BarcodeAlgorithm.AZTEC
                 });
-
-                cboAlgorithm.SelectedItem = roi.Algorithm;
-                cboAlgorithm.SelectedIndexChanged += (s, e) =>
+                cboAlg.SelectedItem = roi.Algorithm ?? BarcodeAlgorithm.QRCode;
+                cboAlg.SelectedIndexChanged += (s, e) =>
                 {
-                    if (selectedRoiIndex >= 0 && selectedRoiIndex < roiList.Count)
-                    {
-                        roiList[selectedRoiIndex].Algorithm = (BarcodeAlgorithm)cboAlgorithm.SelectedItem;
-                        fovList[selectedFovIndex].Rois = roiList;
-                        fovManager.Save(fovList);
-
-                        var newFovList = fovManager.Load();
-                        fovList.Clear();
-                        fovList.AddRange(newFovList);
-
-                        LoggerService.Info($"Đã thay đổi thuật toán ROI {selectedRoiIndex + 1} thành {cboAlgorithm.SelectedItem}");
-                    }
-                };
-
-                int algoRow = innerTable.RowCount;
-                innerTable.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-                innerTable.Controls.Add(lblAlgorithm, 0, algoRow);
-                innerTable.Controls.Add(cboAlgorithm, 1, algoRow);
-                innerTable.RowCount++;
-
-                // IsHidden checkbox
-                var chkHidden = new CheckBox
-                {
-                    Text = "Hidden",
-                    Checked = roi.IsHidden,
-                    Dock = DockStyle.Fill,
-                    Font = new Font("Segoe UI", 9F)
-                };
-
-                chkHidden.CheckedChanged += (s, e) =>
-                {
-                    roi.IsHidden = chkHidden.Checked;
-                    roiList[selectedRoiIndex] = roi;
-                    fovList[selectedFovIndex].Rois = roiList;
-                    fovManager.Save(fovList);
+                    roi.Algorithm = (BarcodeAlgorithm)cboAlg.SelectedItem;
+                    SaveRoi();
                     pictureBox.Invalidate();
                 };
+                AddControlRow(t, lblAlg, cboAlg);
 
-                int hiddenRow = innerTable.RowCount;
-                innerTable.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-                innerTable.Controls.Add(new Label
-                {
-                    Text = "IsHidden:",
-                    Dock = DockStyle.Fill,
-                    TextAlign = ContentAlignment.MiddleLeft,
-                    Font = new Font("Segoe UI", 9F, FontStyle.Bold)
-                }, 0, hiddenRow);
-                innerTable.Controls.Add(chkHidden, 1, hiddenRow);
-                innerTable.RowCount++;
-
-                // QUAN TRỌNG: Add innerTable vào panelModeContent
-                panelModeContent.Controls.Add(innerTable);
+                // Hidden
+                AddHiddenCheckbox(t, roi);
+                panelContent.Controls.Add(t);
             }
 
-            // --- Placeholder HSV ---
-            void ShowHSVInfo()
+            void RenderHsv()
             {
-                panelModeContent.Controls.Clear();
-                var lbl = new Label
+                panelContent.Controls.Clear();
+                var t = CreateInnerTable();
+                AddReadOnlyRow(t, "X", roi.X.ToString());
+                AddReadOnlyRow(t, "Y", roi.Y.ToString());
+                AddReadOnlyRow(t, "Width", roi.Width.ToString());
+                AddReadOnlyRow(t, "Height", roi.Height.ToString());
+
+                // Auto compute if missing
+                if (roi.Lower == null || roi.Upper == null)
+                    AutoComputeAndAssign(roi);
+
+                // Show ranges
+                AddReadOnlyRow(t, "Lower H", roi.Lower.H.ToString());
+                AddReadOnlyRow(t, "Lower S", roi.Lower.S.ToString());
+                AddReadOnlyRow(t, "Lower V", roi.Lower.V.ToString());
+                AddReadOnlyRow(t, "Upper H", roi.Upper.H.ToString());
+                AddReadOnlyRow(t, "Upper S", roi.Upper.S.ToString());
+                AddReadOnlyRow(t, "Upper V", roi.Upper.V.ToString());
+
+                // Recompute button
+                var btnRecompute = new Button
                 {
-                    Text = "Chế độ HSV (chưa triển khai).",
+                    Text = "Recompute HSV",
                     Dock = DockStyle.Top,
-                    AutoSize = true,
-                    Font = new Font("Segoe UI", 10F, FontStyle.Italic),
-                    ForeColor = Color.Gray,
-                    Padding = new Padding(5)
+                    Height = 30
                 };
-                panelModeContent.Controls.Add(lbl);
+                btnRecompute.Click += (s, e) =>
+                {
+                    AutoComputeAndAssign(roi);
+                    RenderHsv();
+                    pictureBox.Invalidate();
+                };
+                t.Controls.Add(btnRecompute);
+                t.SetColumnSpan(btnRecompute, 2);
+
+                // Hidden
+                AddHiddenCheckbox(t, roi);
+                panelContent.Controls.Add(t);
             }
 
-            // --- Sự kiện đổi chế độ ---
             cboMode.SelectedIndexChanged += (s, e) =>
             {
-                if (cboMode.SelectedItem.ToString() == "Barcode")
-                    ShowBarcodeInfo();
+                roi.Mode = cboMode.SelectedItem.ToString();
+                SaveRoi();
+                if (roi.Mode == "HSV")
+                    RenderHsv();
                 else
-                    ShowHSVInfo();
+                    RenderBarcode();
             };
 
-            ShowBarcodeInfo();
+            if (roi.Mode == "HSV") RenderHsv(); else RenderBarcode();
         }
 
-        // Helper: tạo dòng Label + Text
-        private void AddPropertyRow(TableLayoutPanel table, string label, string value)
+        private void AutoComputeAndAssign(RoiRegion roi)
         {
-            int row = table.RowCount;
+            if (currentFovBitmap == null) return;
+            var rect = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
+            rect.Intersect(new Rectangle(0, 0, currentFovBitmap.Width, currentFovBitmap.Height));
+            if (rect.Width <= 0 || rect.Height <= 0) return;
 
-            var lbl = new Label
+            using (var roiBmp = new Bitmap(rect.Width, rect.Height))
             {
-                Text = label,
-                Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleLeft,
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold)
-            };
+                using (var g = Graphics.FromImage(roiBmp))
+                {
+                    g.DrawImage(currentFovBitmap, new Rectangle(0, 0, rect.Width, rect.Height), rect, GraphicsUnit.Pixel);
+                }
 
-            var txt = new TextBox
+                var (lower, upper, _) = hsvAutoService.Compute(roiBmp, huePadding: 2, svPadding: 10);
+                roi.Lower = lower;
+                roi.Upper = upper;
+                SaveRoi();
+            }
+        }
+
+        private void SaveRoi()
+        {
+            if (selectedRoiIndex >= 0 && selectedRoiIndex < roiList.Count &&
+                selectedFovIndex >= 0 && selectedFovIndex < fovList.Count)
+            {
+                fovList[selectedFovIndex].Rois = roiList;
+                fovManager.Save(fovList);
+            }
+        }
+
+        private TableLayoutPanel CreateInnerTable()
+        {
+            var t = new TableLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                ColumnCount = 2,
+                AutoSize = true,
+                Padding = new Padding(5)
+            };
+            t.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120F));
+            t.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            return t;
+        }
+
+        private Label CreateLabel(string text) =>
+            new Label { Text = text, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, Font = new Font("Segoe UI", 9F, FontStyle.Bold) };
+
+        private void AddReadOnlyRow(TableLayoutPanel t, string label, string value)
+        {
+            int row = t.RowCount;
+            t.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            t.Controls.Add(CreateLabel(label + ":"), 0, row);
+            t.Controls.Add(new TextBox
             {
                 Text = value,
-                Dock = DockStyle.Fill,
                 ReadOnly = true,
-                BorderStyle = BorderStyle.FixedSingle,
-                Font = new Font("Segoe UI", 9F)
-            };
+                Dock = DockStyle.Fill
+            }, 1, row);
+            t.RowCount++;
+        }
 
-            table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            table.Controls.Add(lbl, 0, row);
-            table.Controls.Add(txt, 1, row);
-            table.RowCount++;
+        private void AddControlRow(TableLayoutPanel t, Control left, Control right)
+        {
+            int row = t.RowCount;
+            t.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            t.Controls.Add(left, 0, row);
+            t.Controls.Add(right, 1, row);
+            t.RowCount++;
+        }
+
+        private void AddHiddenCheckbox(TableLayoutPanel t, RoiRegion roi)
+        {
+            var chkHidden = new CheckBox
+            {
+                Text = "Hidden",
+                Checked = roi.IsHidden,
+                Dock = DockStyle.Fill
+            };
+            chkHidden.CheckedChanged += (s, e) =>
+            {
+                roi.IsHidden = chkHidden.Checked;
+                SaveRoi();
+                pictureBox.Invalidate();
+            };
+            AddControlRow(t, CreateLabel("IsHidden:"), chkHidden);
         }
     }
 }

@@ -71,11 +71,15 @@
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
     <Compile Include="Models\FovRegion.cs" />
+    <Compile Include="Models\HsvRange.cs" />
+    <Compile Include="Models\HsvValue.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Models\RoiRegion.cs" />
     <Compile Include="Renderers\RoiPropertyPanel.cs" />
     <Compile Include="Renderers\RoiRenderers.cs" />
+    <Compile Include="Services\HsvAutoService.cs" />
+    <Compile Include="Services\HsvService.cs" />
     <Compile Include="Service\BarcodeService.cs" />
     <Compile Include="Service\FovManager.cs" />
     <Compile Include="Service\ImageHelper.cs" />

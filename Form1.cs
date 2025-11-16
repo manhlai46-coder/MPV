@@ -15,6 +15,8 @@ namespace MPV
     {
         private readonly FovManager fovManager;
         private readonly BarcodeService barcodeService;
+        private readonly HsvService hsvService;
+        private readonly HsvAutoService hsvAutoService = new HsvAutoService();
         private readonly RoiRenderer roiRenderer;
         private ContextMenuStrip contextMenu;
 
@@ -39,6 +41,7 @@ namespace MPV
             string fovPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "fov_data.json");
             fovManager = new FovManager(fovPath);
             barcodeService = new BarcodeService();
+            hsvService = new HsvService();
             roiRenderer = new RoiRenderer(pictureBox1);
         }
 
@@ -153,7 +156,14 @@ namespace MPV
                 {
                     pictureBox1.Invalidate();
 
-                    var propertyPanel = new RoiPropertyPanel(fovManager, fovList, pictureBox1, selectedFovIndex, selectedRoiIndex, roiList);
+                    var propertyPanel = new RoiPropertyPanel(
+                        fovManager,
+                        fovList,
+                        pictureBox1,
+                        _bitmap,
+                        selectedFovIndex,
+                        selectedRoiIndex,
+                        roiList);
                     propertyPanel.ShowRoiProperties(panelImage, roiList[selectedRoiIndex]);
                 }
             }
@@ -230,7 +240,14 @@ namespace MPV
                         {
                             selectedRoiIndex = foundIndex;
 
-                            var propertyPanel = new RoiPropertyPanel(fovManager, fovList, pictureBox1, selectedFovIndex, selectedRoiIndex, roiList);
+                            var propertyPanel = new RoiPropertyPanel(
+                                fovManager,
+                                fovList,
+                                pictureBox1,
+                                _bitmap,
+                                selectedFovIndex,
+                                selectedRoiIndex,
+                                roiList);
                             propertyPanel.ShowRoiProperties(panelImage, roiList[selectedRoiIndex]);
 
                             pictureBox1.Invalidate();
@@ -472,17 +489,16 @@ namespace MPV
                 return;
             }
 
-            string detectedBarcodeContent = "";
-            bool anyBarcodeDetected = false;
+            string detectedContent = "";
+            bool anyDetected = false;
 
-            // Lưu lại index hiện tại
             int currentFovIndex = selectedFovIndex;
             int currentRoiIndex = selectedRoiIndex;
 
             for (int fovIndex = 0; fovIndex < fovList.Count; fovIndex++)
             {
                 var fov = fovList[fovIndex];
-                
+
                 if (fov.IsHidden) continue;
                 if (!File.Exists(fov.ImagePath))
                 {
@@ -490,12 +506,10 @@ namespace MPV
                     continue;
                 }
 
-                // Load ảnh và ROI list cho FOV này
                 _bitmap = new Bitmap(fov.ImagePath);
                 roiList = fov.Rois;
                 selectedFovIndex = fovIndex;
 
-                // Cập nhật UI để hiển thị FOV hiện tại
                 pictureBox1.Image = _bitmap;
                 pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
                 _showRoiOnImage = true;
@@ -505,39 +519,45 @@ namespace MPV
                     var roi = roiList[i];
                     if (roi.IsHidden) continue;
 
-                    // Set selected ROI để highlight
                     selectedRoiIndex = i;
-                    
-                    // Force redraw để thấy highlight ngay
-                    pictureBox1.Invalidate();
-                    pictureBox1.Update();
+                    pictureBox1.Refresh();
                     Application.DoEvents();
 
-                    // Decode barcode
-                    Rectangle rect = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
-                    using (var cropped = CropBitmap(_bitmap, rect))
+                    if (roi.Mode == "HSV")
                     {
-                        string text = barcodeService.Decode(cropped, roi.Algorithm);
-                        roi.IsDetected = !string.IsNullOrEmpty(text);
-
-                        if (roi.IsDetected)
+                        // Auto-compute HSV lower/upper (refresh on each run)
+                        var rect = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
+                        rect.Intersect(new Rectangle(0, 0, _bitmap.Width, _bitmap.Height));
+                        using (var roiBmp = new Bitmap(rect.Width, rect.Height))
+                        using (var g = Graphics.FromImage(roiBmp))
                         {
-                            detectedBarcodeContent = text;
-                            anyBarcodeDetected = true;
-                            LoggerService.Info($"FOV {fovIndex + 1} - ROI {i + 1} detected barcode: {text}");
+                            g.DrawImage(_bitmap, new Rectangle(0, 0, rect.Width, rect.Height), rect, GraphicsUnit.Pixel);
+                            var (lower, upper, stats) = hsvAutoService.Compute(roiBmp, 2, 10);
+                            roi.Lower = lower;
+                            roi.Upper = upper;
+                            // Optionally use stats to decide highlight color (not persisted).
+                        }
+                    }
+                    else
+                    {
+                        // Existing barcode branch (remove IsDetected persistence if not desired)
+                        Rectangle rect = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
+                        using (var cropped = new Bitmap(rect.Width, rect.Height))
+                        using (var g = Graphics.FromImage(cropped))
+                        {
+                            g.DrawImage(_bitmap, new Rectangle(0, 0, rect.Width, rect.Height), rect, GraphicsUnit.Pixel);
+                            string text = barcodeService.Decode(cropped, roi.Algorithm ?? BarcodeAlgorithm.QRCode);
+                            // You can keep transient state in memory if needed.
                         }
                     }
 
-                    // Pause để thấy rõ animation
                     System.Threading.Thread.Sleep(300);
                 }
             }
 
-            // Khôi phục lại selection ban đầu
             selectedFovIndex = currentFovIndex;
             selectedRoiIndex = currentRoiIndex;
 
-            // Cập nhật lại UI với selection ban đầu
             if (selectedFovIndex >= 0 && selectedFovIndex < fovList.Count)
             {
                 var fov = fovList[selectedFovIndex];
@@ -549,40 +569,18 @@ namespace MPV
                     _showRoiOnImage = true;
                 }
             }
-            else
-            {
-                // Nếu không có selection, hiển thị FOV cuối cùng đã run
-                if (fovList.Count > 0 && File.Exists(fovList[fovList.Count - 1].ImagePath))
-                {
-                    selectedFovIndex = fovList.Count - 1;
-                    _bitmap = new Bitmap(fovList[selectedFovIndex].ImagePath);
-                    pictureBox1.Image = _bitmap;
-                    roiList = fovList[selectedFovIndex].Rois;
-                    _showRoiOnImage = true;
-                }
-            }
 
-            selectedRoiIndex = -1; // Clear selection
-            pictureBox1.Invalidate();
+            selectedRoiIndex = -1;
+            pictureBox1.Refresh();
 
-            if (anyBarcodeDetected)
+            if (anyDetected)
             {
-                MessageBox.Show(detectedBarcodeContent);
+                MessageBox.Show(detectedContent);
             }
             else
             {
-                MessageBox.Show("Không đọc được barcode");
+                MessageBox.Show("Không phát hiện được");
             }
-        }
-
-        private void btn_Exit_Click(object sender, EventArgs e)
-        {
-            Application.Exit();
-        }
-
-        private void btn_Exit_Click_1(object sender, EventArgs e)
-        {
-            Application.Exit();
         }
     }
 }
