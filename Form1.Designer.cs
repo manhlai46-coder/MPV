@@ -40,6 +40,7 @@
             this.btnDrawRoi = new System.Windows.Forms.Button();
             this.btnAddFov = new System.Windows.Forms.Button();
             this.panelImage = new System.Windows.Forms.Panel();
+            this.btn_test = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.contextMenuTree.SuspendLayout();
             this.SuspendLayout();
@@ -97,13 +98,12 @@
             // 
             // btn_Exit
             // 
-            this.btn_Exit.Location = new System.Drawing.Point(730, 414);
+            this.btn_Exit.Location = new System.Drawing.Point(1061, 534);
             this.btn_Exit.Name = "btn_Exit";
             this.btn_Exit.Size = new System.Drawing.Size(75, 23);
             this.btn_Exit.TabIndex = 6;
             this.btn_Exit.Text = "Exit";
             this.btn_Exit.UseVisualStyleBackColor = true;
-          
             // 
             // btn_Update
             // 
@@ -139,14 +139,25 @@
             // 
             this.panelImage.Location = new System.Drawing.Point(761, 22);
             this.panelImage.Name = "panelImage";
-            this.panelImage.Size = new System.Drawing.Size(352, 248);
+            this.panelImage.Size = new System.Drawing.Size(352, 386);
             this.panelImage.TabIndex = 12;
+            // 
+            // btn_test
+            // 
+            this.btn_test.Location = new System.Drawing.Point(355, 275);
+            this.btn_test.Name = "btn_test";
+            this.btn_test.Size = new System.Drawing.Size(75, 23);
+            this.btn_test.TabIndex = 13;
+            this.btn_test.Text = "Test";
+            this.btn_test.UseVisualStyleBackColor = true;
+            this.btn_test.Click += new System.EventHandler(this.btn_test_Click);
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1390, 634);
+            this.Controls.Add(this.btn_test);
             this.Controls.Add(this.panelImage);
             this.Controls.Add(this.btnAddFov);
             this.Controls.Add(this.btnDrawRoi);
@@ -179,6 +190,7 @@
         private System.Windows.Forms.Button btnDrawRoi;
         private System.Windows.Forms.Button btnAddFov;
         private System.Windows.Forms.Panel panelImage;
+        private System.Windows.Forms.Button btn_test;
     }
 }
 

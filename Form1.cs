@@ -573,13 +573,22 @@ namespace MPV
             selectedRoiIndex = -1;
             pictureBox1.Refresh();
 
-            if (anyDetected)
+            //if (anyDetected)
+            //{
+            //    MessageBox.Show(detectedContent);
+            //}
+            //else
+            //{
+            //    MessageBox.Show("Không phát hiện được");
+            //}
+        }
+
+        private void btn_test_Click(object sender, EventArgs e)
+        {
+            if (selectedRoiIndex < 0)
             {
-                MessageBox.Show(detectedContent);
-            }
-            else
-            {
-                MessageBox.Show("Không phát hiện được");
+                MessageBox.Show("Vui lòng chọn ROI cần test");
+                return;
             }
         }
     }
