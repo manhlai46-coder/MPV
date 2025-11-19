@@ -34,6 +34,15 @@ namespace MPV
         private List<FovRegion> fovList = new List<FovRegion>();
         private List<RoiRegion> roiList = new List<RoiRegion>();
 
+        // Last pass/fail results (true=PASS, false=FAIL)
+        private readonly Dictionary<(int fov, int roi), bool> _lastTestResults = new Dictionary<(int fov, int roi), bool>();
+
+        // Show only selected ROI
+        private bool _singleRoiMode = false;
+
+        // Show colored results for ALL ROIs after Run
+        private bool _showRunResults = false;
+
         public Form1()
         {
             InitializeComponent();
@@ -118,6 +127,8 @@ namespace MPV
                 if (!int.TryParse(e.Node.Text.Replace("FOV ", ""), out int fovIndex)) return;
                 selectedFovIndex = fovIndex - 1;
                 selectedRoiIndex = -1;
+                _singleRoiMode = false;
+                _showRunResults = false; // leaving run visualization when changing FOV
 
                 if (selectedFovIndex >= 0 && selectedFovIndex < fovList.Count)
                 {
@@ -148,12 +159,12 @@ namespace MPV
                 selectedRoiIndex = roiIndex - 1;
 
                 if (selectedFovIndex >= 0 && selectedFovIndex < fovList.Count)
-                {
                     roiList = fovList[selectedFovIndex].Rois;
-                }
 
                 if (selectedRoiIndex >= 0 && selectedRoiIndex < roiList.Count)
                 {
+                    _singleRoiMode = true;
+                    _showRunResults = false; // focus only on selected ROI
                     pictureBox1.Invalidate();
 
                     var propertyPanel = new RoiPropertyPanel(
@@ -239,6 +250,8 @@ namespace MPV
                         if (foundIndex >= 0)
                         {
                             selectedRoiIndex = foundIndex;
+                            _singleRoiMode = true;
+                            _showRunResults = false;
 
                             var propertyPanel = new RoiPropertyPanel(
                                 fovManager,
@@ -255,6 +268,8 @@ namespace MPV
                         else
                         {
                             selectedRoiIndex = -1;
+                            _singleRoiMode = false;
+                            _showRunResults = false;
                             panelImage.Controls.Clear();
                             pictureBox1.Invalidate();
                         }
@@ -265,11 +280,8 @@ namespace MPV
                 {
                     TreeNode node = trv1.GetNodeAt(e.X, e.Y);
                     if (node != null)
-                    {
                         trv1.SelectedNode = node;
-                    }
                 }
-
                 return;
             }
 
@@ -340,11 +352,100 @@ namespace MPV
 
         private void pictureBox1_Paint(object sender, PaintEventArgs e)
         {
-            var visibleRois = roiList.FindAll(r => !r.IsHidden);
-            if (selectedFovIndex >= 0 && selectedFovIndex < fovList.Count && fovList[selectedFovIndex].IsHidden)
-                visibleRois.Clear();
+            // Single selected ROI mode (after Test button)
+            if (_singleRoiMode && !_showRunResults && selectedRoiIndex >= 0 && selectedRoiIndex < roiList.Count && _bitmap != null)
+            {
+                var roi = roiList[selectedRoiIndex];
+                Rectangle imgRect = ImageHelper.GetDisplayedImageRectangle(pictureBox1);
+                if (imgRect.Width > 0 && imgRect.Height > 0)
+                {
+                    float sx = (float)imgRect.Width / _bitmap.Width;
+                    float sy = (float)imgRect.Height / _bitmap.Height;
 
-            roiRenderer.DrawRois(e.Graphics, visibleRois, _bitmap, selectedRoiIndex, _showRoiOnImage);
+                    Rectangle dispRect = new Rectangle(
+                        imgRect.X + (int)Math.Round(roi.X * sx),
+                        imgRect.Y + (int)Math.Round(roi.Y * sy),
+                        (int)Math.Round(roi.Width * sx),
+                        (int)Math.Round(roi.Height * sy)
+                    );
+
+                    bool pass;
+                    Color borderColor;
+                    if (_lastTestResults.TryGetValue((selectedFovIndex, selectedRoiIndex), out pass))
+                        borderColor = pass ? Color.LimeGreen : Color.Red; // PASS=green, FAIL=red
+                    else
+                        borderColor = Color.DodgerBlue; // not tested
+
+                    using (var pen = new Pen(borderColor, 3))
+                        e.Graphics.DrawRectangle(pen, dispRect);
+                }
+
+                if (_drawMode && _selectRectangle != Rectangle.Empty)
+                {
+                    using (Pen pen = new Pen(Color.Red, 2))
+                    {
+                        pen.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
+                        e.Graphics.DrawRectangle(pen, _selectRectangle);
+                    }
+                }
+                return;
+            }
+
+            // After Run: show pass/fail colors for ALL ROIs
+            if (_showRunResults && _bitmap != null)
+            {
+                var visibleRois = roiList.FindAll(r => !r.IsHidden);
+                if (selectedFovIndex >= 0 && selectedFovIndex < fovList.Count && fovList[selectedFovIndex].IsHidden)
+                    visibleRois.Clear();
+
+                Rectangle imgRect = ImageHelper.GetDisplayedImageRectangle(pictureBox1);
+                if (imgRect.Width > 0 && imgRect.Height > 0)
+                {
+                    float sx = (float)imgRect.Width / _bitmap.Width;
+                    float sy = (float)imgRect.Height / _bitmap.Height;
+
+                    for (int i = 0; i < roiList.Count; i++)
+                    {
+                        var r = roiList[i];
+                        if (r.IsHidden) continue;
+
+                        bool pass;
+                        Color borderColor;
+                        if (_lastTestResults.TryGetValue((selectedFovIndex, i), out pass))
+                            borderColor = pass ? Color.LimeGreen : Color.Red; // PASS=green, FAIL=red
+                        else
+                            continue; // skip ROIs that weren't tested
+
+                        Rectangle dispRect = new Rectangle(
+                            imgRect.X + (int)Math.Round(r.X * sx),
+                            imgRect.Y + (int)Math.Round(r.Y * sy),
+                            (int)Math.Round(r.Width * sx),
+                            (int)Math.Round(r.Height * sy)
+                        );
+                        using (var pen = new Pen(borderColor, 3))
+                        {
+                            e.Graphics.DrawRectangle(pen, dispRect);
+                        }
+                    }
+                }
+
+                if (_drawMode && _selectRectangle != Rectangle.Empty)
+                {
+                    using (Pen pen = new Pen(Color.Red, 2))
+                    {
+                        pen.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
+                        e.Graphics.DrawRectangle(pen, _selectRectangle);
+                    }
+                }
+                return;
+            }
+
+            // Normal mode: draw base ROIs using roiRenderer
+            var normalVisibleRois = roiList.FindAll(r => !r.IsHidden);
+            if (selectedFovIndex >= 0 && selectedFovIndex < fovList.Count && fovList[selectedFovIndex].IsHidden)
+                normalVisibleRois.Clear();
+
+            roiRenderer.DrawRois(e.Graphics, normalVisibleRois, _bitmap, selectedRoiIndex, _showRoiOnImage);
 
             if (_drawMode && _selectRectangle != Rectangle.Empty)
             {
@@ -481,115 +582,135 @@ namespace MPV
 
         private void btnrun_Click_1(object sender, EventArgs e)
         {
-            fovList = fovManager.Load();
-
-            if (fovList.Count == 0)
+            // Run ALL ROIs in current selected FOV (only that FOV, not all FOVs),
+            // color each ROI: PASS=Green, FAIL=Red
+            if (selectedFovIndex < 0 || selectedFovIndex >= fovList.Count)
             {
-                MessageBox.Show("Không có FOV nào được lưu.");
+                MessageBox.Show("Hãy chọn FOV trước.");
+                return;
+            }
+            if (!File.Exists(fovList[selectedFovIndex].ImagePath))
+            {
+                MessageBox.Show("Không tìm thấy ảnh FOV.");
                 return;
             }
 
-            string detectedContent = "";
-            bool anyDetected = false;
+            var fov = fovList[selectedFovIndex];
+            _bitmap = new Bitmap(fov.ImagePath);
+            pictureBox1.Image = _bitmap;
+            pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+            roiList = fov.Rois;
 
-            int currentFovIndex = selectedFovIndex;
-            int currentRoiIndex = selectedRoiIndex;
+            _lastTestResults.Clear();
 
-            for (int fovIndex = 0; fovIndex < fovList.Count; fovIndex++)
+            for (int i = 0; i < roiList.Count; i++)
             {
-                var fov = fovList[fovIndex];
+                var roi = roiList[i];
+                if (roi.IsHidden) continue;
 
-                if (fov.IsHidden) continue;
-                if (!File.Exists(fov.ImagePath))
+                bool pass = false;
+                Rectangle rect = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
+                rect.Intersect(new Rectangle(0, 0, _bitmap.Width, _bitmap.Height));
+                if (rect.Width <= 0 || rect.Height <= 0)
                 {
-                    MessageBox.Show($"Không tìm thấy ảnh: {fov.ImagePath}");
+                    _lastTestResults[(selectedFovIndex, i)] = false;
                     continue;
                 }
 
-                _bitmap = new Bitmap(fov.ImagePath);
-                roiList = fov.Rois;
-                selectedFovIndex = fovIndex;
-
-                pictureBox1.Image = _bitmap;
-                pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
-                _showRoiOnImage = true;
-
-                for (int i = 0; i < roiList.Count; i++)
+                using (var roiBmp = new Bitmap(rect.Width, rect.Height))
+                using (var g = Graphics.FromImage(roiBmp))
                 {
-                    var roi = roiList[i];
-                    if (roi.IsHidden) continue;
-
-                    selectedRoiIndex = i;
-                    pictureBox1.Refresh();
-                    Application.DoEvents();
-
-                    if (roi.Mode == "HSV")
+                    g.DrawImage(_bitmap, new Rectangle(0, 0, rect.Width, rect.Height), rect, GraphicsUnit.Pixel);
+                    if (string.Equals(roi.Mode, "HSV", StringComparison.OrdinalIgnoreCase))
                     {
-                        // Auto-compute HSV lower/upper (refresh on each run)
-                        var rect = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
-                        rect.Intersect(new Rectangle(0, 0, _bitmap.Width, _bitmap.Height));
-                        using (var roiBmp = new Bitmap(rect.Width, rect.Height))
-                        using (var g = Graphics.FromImage(roiBmp))
-                        {
-                            g.DrawImage(_bitmap, new Rectangle(0, 0, rect.Width, rect.Height), rect, GraphicsUnit.Pixel);
-                            var (lower, upper, stats) = hsvAutoService.Compute(roiBmp, 2, 10);
-                            roi.Lower = lower;
-                            roi.Upper = upper;
-                            // Optionally use stats to decide highlight color (not persisted).
-                        }
+                        var (lower, upper, stats) = hsvAutoService.Compute(roiBmp, 2, 10);
+                        roi.Lower = lower;
+                        roi.Upper = upper;
+                        var lowerRange = new HsvRange(lower.H, lower.H, lower.S, lower.S, lower.V, lower.V);
+                        var upperRange = new HsvRange(upper.H, upper.H, upper.S, upper.S, upper.V, upper.V);
+                        double matchPct;
+                        pass = hsvService.DetectColor(roiBmp, lowerRange, upperRange, out matchPct);
                     }
                     else
                     {
-                        // Existing barcode branch (remove IsDetected persistence if not desired)
-                        Rectangle rect = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
-                        using (var cropped = new Bitmap(rect.Width, rect.Height))
-                        using (var g = Graphics.FromImage(cropped))
-                        {
-                            g.DrawImage(_bitmap, new Rectangle(0, 0, rect.Width, rect.Height), rect, GraphicsUnit.Pixel);
-                            string text = barcodeService.Decode(cropped, roi.Algorithm ?? BarcodeAlgorithm.QRCode);
-                            // You can keep transient state in memory if needed.
-                        }
+                        string decoded = barcodeService.Decode(roiBmp, roi.Algorithm ?? BarcodeAlgorithm.QRCode);
+                        pass = !string.IsNullOrWhiteSpace(decoded);
                     }
-
-                    System.Threading.Thread.Sleep(300);
                 }
+
+                _lastTestResults[(selectedFovIndex, i)] = pass;
             }
 
-            selectedFovIndex = currentFovIndex;
-            selectedRoiIndex = currentRoiIndex;
-
-            if (selectedFovIndex >= 0 && selectedFovIndex < fovList.Count)
-            {
-                var fov = fovList[selectedFovIndex];
-                if (File.Exists(fov.ImagePath))
-                {
-                    _bitmap = new Bitmap(fov.ImagePath);
-                    pictureBox1.Image = _bitmap;
-                    roiList = fov.Rois;
-                    _showRoiOnImage = true;
-                }
-            }
-
-            selectedRoiIndex = -1;
-            pictureBox1.Refresh();
-
-            //if (anyDetected)
-            //{
-            //    MessageBox.Show(detectedContent);
-            //}
-            //else
-            //{
-            //    MessageBox.Show("Không phát hiện được");
-            //}
+            // Show all ROI results
+            _showRunResults = true;
+            _singleRoiMode = false;
+            selectedRoiIndex = -1; // no highlight selection border
+            pictureBox1.Invalidate();
         }
 
         private void btn_test_Click(object sender, EventArgs e)
         {
-            if (selectedRoiIndex < 0)
+            if (selectedFovIndex < 0 || selectedFovIndex >= fovList.Count)
             {
-                MessageBox.Show("Vui lòng chọn ROI cần test");
+                MessageBox.Show("Chưa chọn FOV hợp lệ.");
                 return;
             }
+            if (selectedRoiIndex < 0 || selectedRoiIndex >= roiList.Count)
+            {
+                MessageBox.Show("Vui lòng chọn ROI cần test.");
+                return;
+            }
+            if (_bitmap == null)
+            {
+                var fov = fovList[selectedFovIndex];
+                if (!File.Exists(fov.ImagePath))
+                {
+                    MessageBox.Show("Không tìm thấy ảnh FOV.");
+                    return;
+                }
+                _bitmap = new Bitmap(fov.ImagePath);
+                pictureBox1.Image = _bitmap;
+                pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+            }
+
+            var roi = roiList[selectedRoiIndex];
+            Rectangle rect = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
+            rect.Intersect(new Rectangle(0, 0, _bitmap.Width, _bitmap.Height));
+            if (rect.Width <= 0 || rect.Height <= 0)
+            {
+                MessageBox.Show("ROI nằm ngoài ảnh.");
+                return;
+            }
+
+            bool pass = false;
+            using (var roiBmp = new Bitmap(rect.Width, rect.Height))
+            using (var g = Graphics.FromImage(roiBmp))
+            {
+                g.DrawImage(_bitmap, new Rectangle(0, 0, rect.Width, rect.Height), rect, GraphicsUnit.Pixel);
+                if (string.Equals(roi.Mode, "HSV", StringComparison.OrdinalIgnoreCase))
+                {
+                    var (lower, upper, stats) = hsvAutoService.Compute(roiBmp, 2, 10);
+                    roi.Lower = lower;
+                    roi.Upper = upper;
+                    var lowerRange = new HsvRange(lower.H, lower.H, lower.S, lower.S, lower.V, lower.V);
+                    var upperRange = new HsvRange(upper.H, upper.H, upper.S, upper.S, upper.V, upper.V);
+                    double matchPct;
+                    pass = hsvService.DetectColor(roiBmp, lowerRange, upperRange, out matchPct);
+                }
+                else
+                {
+                    var algorithm = roi.Algorithm ?? BarcodeAlgorithm.QRCode;
+                    string decoded = barcodeService.Decode(roiBmp, algorithm);
+                    pass = !string.IsNullOrWhiteSpace(decoded);
+                }
+            }
+
+            _lastTestResults[(selectedFovIndex, selectedRoiIndex)] = pass;
+            _singleRoiMode = true;
+            _showRunResults = false;
+            pictureBox1.Invalidate();
+
+            MessageBox.Show(pass ? "PASS" : "FAIL");
         }
     }
 }
