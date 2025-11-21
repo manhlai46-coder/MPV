@@ -701,6 +701,7 @@ namespace MPV
                 {
                     var algorithm = roi.Algorithm ?? BarcodeAlgorithm.QRCode;
                     string decoded = barcodeService.Decode(roiBmp, algorithm);
+                    txt1.Text = decoded;
                     pass = !string.IsNullOrWhiteSpace(decoded);
                 }
             }
