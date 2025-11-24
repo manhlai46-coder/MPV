@@ -150,7 +150,7 @@ namespace MPV.Renderers
                
                 var btnRecompute = new Button
                 {
-                    Text = "Recompute HSV",
+                    Text = "Get HSV",
                     Dock = DockStyle.Top,
                     Height = 30
                 };

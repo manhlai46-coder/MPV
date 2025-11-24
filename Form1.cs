@@ -582,8 +582,7 @@ namespace MPV
 
         private void btnrun_Click_1(object sender, EventArgs e)
         {
-            // Run ALL ROIs in current selected FOV (only that FOV, not all FOVs),
-            // color each ROI: PASS=Green, FAIL=Red
+          
             if (selectedFovIndex < 0 || selectedFovIndex >= fovList.Count)
             {
                 MessageBox.Show("Hãy chọn FOV trước.");
@@ -633,18 +632,27 @@ namespace MPV
                     }
                     else
                     {
-                        string decoded = barcodeService.Decode(roiBmp, roi.Algorithm ?? BarcodeAlgorithm.QRCode);
-                        pass = !string.IsNullOrWhiteSpace(decoded);
+                        var algorithm = roi.Algorithm ?? BarcodeAlgorithm.QRCode;
+                        string decoded = barcodeService.Decode(roiBmp, algorithm);
+                        txt1.Text = decoded;
+
+                        bool passLength = true;
+                        if (roi.ExpectedLength > 0)
+                        {
+                            passLength = decoded?.Length == roi.ExpectedLength;
+                        }
+
+                        pass = !string.IsNullOrWhiteSpace(decoded) && passLength;
                     }
                 }
 
                 _lastTestResults[(selectedFovIndex, i)] = pass;
             }
 
-            // Show all ROI results
+            
             _showRunResults = true;
             _singleRoiMode = false;
-            selectedRoiIndex = -1; // no highlight selection border
+            selectedRoiIndex = -1;
             pictureBox1.Invalidate();
         }
 
@@ -689,14 +697,24 @@ namespace MPV
                 g.DrawImage(_bitmap, new Rectangle(0, 0, rect.Width, rect.Height), rect, GraphicsUnit.Pixel);
                 if (string.Equals(roi.Mode, "HSV", StringComparison.OrdinalIgnoreCase))
                 {
-                    var (lower, upper, stats) = hsvAutoService.Compute(roiBmp, 2, 10);
-                    roi.Lower = lower;
-                    roi.Upper = upper;
-                    var lowerRange = new HsvRange(lower.H, lower.H, lower.S, lower.S, lower.V, lower.V);
-                    var upperRange = new HsvRange(upper.H, upper.H, upper.S, upper.S, upper.V, upper.V);
-                    double matchPct;
-                    pass = hsvService.DetectColor(roiBmp, lowerRange, upperRange, out matchPct);
+                    // Tính HSV của ảnh roiBmp
+                    var (lower, upper, _) = hsvAutoService.Compute(roiBmp, 2, 10);
+
+                    // So sánh giá trị HSV này với ngưỡng Lower và Upper trong roi hiện tại
+                    bool inRange = true;
+
+                    // Giả sử hsvAutoService.Compute trả về lower và upper như roi đã lưu
+                    // Kiểm tra từng kênh H, S, V xem có nằm trong ngưỡng roi.Lower - roi.Upper không
+                    if (lower.H < roi.Lower.H || upper.H > roi.Upper.H ||
+                        lower.S < roi.Lower.S || upper.S > roi.Upper.S ||
+                        lower.V < roi.Lower.V || upper.V > roi.Upper.V)
+                    {
+                        inRange = false;
+                    }
+
+                    pass = inRange;
                 }
+
                 else
                 {
                     var algorithm = roi.Algorithm ?? BarcodeAlgorithm.QRCode;
