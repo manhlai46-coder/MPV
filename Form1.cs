@@ -702,9 +702,18 @@ namespace MPV
                     var algorithm = roi.Algorithm ?? BarcodeAlgorithm.QRCode;
                     string decoded = barcodeService.Decode(roiBmp, algorithm);
                     txt1.Text = decoded;
-                    pass = !string.IsNullOrWhiteSpace(decoded);
+
+                    bool passLength = true;
+                    if (roi.ExpectedLength > 0)  
+                    {
+                        passLength = decoded?.Length == roi.ExpectedLength;
+                    }
+
+                    pass = !string.IsNullOrWhiteSpace(decoded) && passLength;
                 }
+
             }
+
 
             _lastTestResults[(selectedFovIndex, selectedRoiIndex)] = pass;
             _singleRoiMode = true;

@@ -85,7 +85,7 @@ namespace MPV.Renderers
                 AddReadOnlyRow(t, "Width", roi.Width.ToString());
                 AddReadOnlyRow(t, "Height", roi.Height.ToString());
 
-                // Algorithm combo
+               
                 var lblAlg = CreateLabel("Algorithm:");
                 var cboAlg = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList };
                 cboAlg.Items.AddRange(new object[]
@@ -109,6 +109,22 @@ namespace MPV.Renderers
                 };
                 AddControlRow(t, lblAlg, cboAlg);
 
+             
+                var txtLength = new TextBox
+                {
+                    Dock = DockStyle.Fill,
+                    Text = roi.ExpectedLength > 0 ? roi.ExpectedLength.ToString() : ""
+                };
+                txtLength.TextChanged += (s, e) =>
+                {
+                    if (int.TryParse(txtLength.Text, out int length))
+                    {
+                        roi.ExpectedLength = length;
+                        SaveRoi();
+                    }
+                };
+                AddControlRow(t, CreateLabel("Length:"), txtLength);
+
                 // Hidden
                 AddHiddenCheckbox(t, roi);
                 panelContent.Controls.Add(t);
@@ -122,16 +138,16 @@ namespace MPV.Renderers
                 AddReadOnlyRow(t, "Width", roi.Width.ToString());
                 AddReadOnlyRow(t, "Height", roi.Height.ToString());
 
-                // Auto compute if missing
+               
                 if (roi.Lower == null || roi.Upper == null)
                     AutoComputeAndAssign(roi);
 
-                // Show HSV as 3 rows: H / S / V
+               
                 AddReadOnlyRow(t, "H", $"{roi.Lower.H} - {roi.Upper.H}");
                 AddReadOnlyRow(t, "S", $"{roi.Lower.S} - {roi.Upper.S}");
                 AddReadOnlyRow(t, "V", $"{roi.Lower.V} - {roi.Upper.V}");
 
-                // Recompute button
+               
                 var btnRecompute = new Button
                 {
                     Text = "Recompute HSV",
@@ -147,7 +163,7 @@ namespace MPV.Renderers
                 t.Controls.Add(btnRecompute);
                 t.SetColumnSpan(btnRecompute, 2);
 
-                // Hidden checkbox
+               
                 AddHiddenCheckbox(t, roi);
 
                 panelContent.Controls.Add(t);

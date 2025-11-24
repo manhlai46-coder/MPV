@@ -15,6 +15,8 @@ namespace MPV.Models
         public int Width { get; set; }
         public int Height { get; set; }
         public bool IsHidden { get; set; } = false;
+        public int ExpectedLength { get; set; } = 0;  // default 0 nghĩa là không kiểm tra
+
 
         // Mode: "Barcode" hoặc "HSV"
         public string Mode { get; set; } = "Barcode";
