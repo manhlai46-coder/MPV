@@ -86,7 +86,7 @@ namespace MPV.Renderers
                 AddReadOnlyRow(t, "Height", roi.Height.ToString());
 
                
-                var lblAlg = CreateLabel("Algorithm:");
+                var lblAlg = CreateLabel("Format:");
                 var cboAlg = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList };
                 cboAlg.Items.AddRange(new object[]
                 {

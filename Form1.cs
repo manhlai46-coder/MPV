@@ -697,14 +697,8 @@ namespace MPV
                 g.DrawImage(_bitmap, new Rectangle(0, 0, rect.Width, rect.Height), rect, GraphicsUnit.Pixel);
                 if (string.Equals(roi.Mode, "HSV", StringComparison.OrdinalIgnoreCase))
                 {
-                    // Tính HSV của ảnh roiBmp
                     var (lower, upper, _) = hsvAutoService.Compute(roiBmp, 2, 10);
-
-                    // So sánh giá trị HSV này với ngưỡng Lower và Upper trong roi hiện tại
                     bool inRange = true;
-
-                    // Giả sử hsvAutoService.Compute trả về lower và upper như roi đã lưu
-                    // Kiểm tra từng kênh H, S, V xem có nằm trong ngưỡng roi.Lower - roi.Upper không
                     if (lower.H < roi.Lower.H || upper.H > roi.Upper.H ||
                         lower.S < roi.Lower.S || upper.S > roi.Upper.S ||
                         lower.V < roi.Lower.V || upper.V > roi.Upper.V)
