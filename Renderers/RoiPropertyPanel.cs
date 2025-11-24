@@ -113,7 +113,6 @@ namespace MPV.Renderers
                 AddHiddenCheckbox(t, roi);
                 panelContent.Controls.Add(t);
             }
-
             void RenderHsv()
             {
                 panelContent.Controls.Clear();
@@ -127,13 +126,10 @@ namespace MPV.Renderers
                 if (roi.Lower == null || roi.Upper == null)
                     AutoComputeAndAssign(roi);
 
-                // Show ranges
-                AddReadOnlyRow(t, "Lower H", roi.Lower.H.ToString());
-                AddReadOnlyRow(t, "Lower S", roi.Lower.S.ToString());
-                AddReadOnlyRow(t, "Lower V", roi.Lower.V.ToString());
-                AddReadOnlyRow(t, "Upper H", roi.Upper.H.ToString());
-                AddReadOnlyRow(t, "Upper S", roi.Upper.S.ToString());
-                AddReadOnlyRow(t, "Upper V", roi.Upper.V.ToString());
+                // Show HSV as 3 rows: H / S / V
+                AddReadOnlyRow(t, "H", $"{roi.Lower.H} - {roi.Upper.H}");
+                AddReadOnlyRow(t, "S", $"{roi.Lower.S} - {roi.Upper.S}");
+                AddReadOnlyRow(t, "V", $"{roi.Lower.V} - {roi.Upper.V}");
 
                 // Recompute button
                 var btnRecompute = new Button
@@ -151,10 +147,13 @@ namespace MPV.Renderers
                 t.Controls.Add(btnRecompute);
                 t.SetColumnSpan(btnRecompute, 2);
 
-                // Hidden
+                // Hidden checkbox
                 AddHiddenCheckbox(t, roi);
+
                 panelContent.Controls.Add(t);
             }
+
+
 
             cboMode.SelectedIndexChanged += (s, e) =>
             {
