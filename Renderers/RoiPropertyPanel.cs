@@ -1,4 +1,5 @@
-﻿using System;
+﻿// FIXED VERSION — RoiPropertyPanel (NO DUPLICATION, NO LOOP)
+using System;
 using System.Drawing;
 using System.Windows.Forms;
 using MPV.Models;
@@ -6,6 +7,11 @@ using System.Collections.Generic;
 using MPV.Service;
 using MPV.Enums;
 using MPV.Services;
+using OpenCvSharp;
+using System.Linq;
+using System.IO;
+using System.Drawing.Imaging;
+using OpenCvSharp.Extensions;
 
 namespace MPV.Renderers
 {
@@ -50,22 +56,22 @@ namespace MPV.Renderers
                 AutoSize = true,
                 Padding = new Padding(10)
             };
+
             root.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120F));
             root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
 
-            // Mode selector
             var lblMode = CreateLabel("Mode:");
             var cboMode = new ComboBox
             {
                 Dock = DockStyle.Fill,
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
-            cboMode.Items.AddRange(new object[] { "Barcode", "HSV" });
+            cboMode.Items.AddRange(new object[] { "Barcode", "HSV", "Template Matching" });
             cboMode.SelectedItem = roi.Mode ?? "Barcode";
+
             root.Controls.Add(lblMode, 0, 0);
             root.Controls.Add(cboMode, 1, 0);
 
-            // Main content panel
             var panelContent = new Panel
             {
                 Dock = DockStyle.Fill,
@@ -73,137 +79,230 @@ namespace MPV.Renderers
             };
             root.Controls.Add(panelContent, 0, 1);
             root.SetColumnSpan(panelContent, 2);
-
             panelImage.Controls.Add(root);
 
-            void RenderBarcode()
+            void Render()
             {
                 panelContent.Controls.Clear();
-                var t = CreateInnerTable();
-                AddReadOnlyRow(t, "X", roi.X.ToString());
-                AddReadOnlyRow(t, "Y", roi.Y.ToString());
-                AddReadOnlyRow(t, "Width", roi.Width.ToString());
-                AddReadOnlyRow(t, "Height", roi.Height.ToString());
 
-               
-                var lblAlg = CreateLabel("Format:");
-                var cboAlg = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList };
-                cboAlg.Items.AddRange(new object[]
-                {
-                    BarcodeAlgorithm.QRCode,
-                    BarcodeAlgorithm.Code128,
-                    BarcodeAlgorithm.EAN13,
-                    BarcodeAlgorithm.DataMatrix,
-                    BarcodeAlgorithm.CODE_39,
-                    BarcodeAlgorithm.EAN_8,
-                    BarcodeAlgorithm.UPC_A,
-                    BarcodeAlgorithm.PDF_417,
-                    BarcodeAlgorithm.AZTEC
-                });
-                cboAlg.SelectedItem = roi.Algorithm ?? BarcodeAlgorithm.QRCode;
-                cboAlg.SelectedIndexChanged += (s, e) =>
-                {
-                    roi.Algorithm = (BarcodeAlgorithm)cboAlg.SelectedItem;
-                    SaveRoi();
-                    pictureBox.Invalidate();
-                };
-                AddControlRow(t, lblAlg, cboAlg);
-
-             
-                var txtLength = new TextBox
-                {
-                    Dock = DockStyle.Fill,
-                    Text = roi.ExpectedLength > 0 ? roi.ExpectedLength.ToString() : ""
-                };
-                txtLength.TextChanged += (s, e) =>
-                {
-                    if (int.TryParse(txtLength.Text, out int length))
-                    {
-                        roi.ExpectedLength = length;
-                        SaveRoi();
-                    }
-                };
-                AddControlRow(t, CreateLabel("Length:"), txtLength);
-
-                // Hidden
-                AddHiddenCheckbox(t, roi);
-                panelContent.Controls.Add(t);
+                if (roi.Mode == "HSV") RenderHsvPanel(panelContent, roi);
+                else if (roi.Mode == "Template Matching") RenderTemplatePanel(panelContent, roi);
+                else RenderBarcodePanel(panelContent, roi);
             }
-            void RenderHsv()
-            {
-                panelContent.Controls.Clear();
-                var t = CreateInnerTable();
-                AddReadOnlyRow(t, "X", roi.X.ToString());
-                AddReadOnlyRow(t, "Y", roi.Y.ToString());
-                AddReadOnlyRow(t, "Width", roi.Width.ToString());
-                AddReadOnlyRow(t, "Height", roi.Height.ToString());
-
-               
-                if (roi.Lower == null || roi.Upper == null)
-                    AutoComputeAndAssign(roi);
-
-               
-                AddReadOnlyRow(t, "H", $"{roi.Lower.H} - {roi.Upper.H}");
-                AddReadOnlyRow(t, "S", $"{roi.Lower.S} - {roi.Upper.S}");
-                AddReadOnlyRow(t, "V", $"{roi.Lower.V} - {roi.Upper.V}");
-
-               
-                var btnRecompute = new Button
-                {
-                    Text = "Get HSV",
-                    Dock = DockStyle.Top,
-                    Height = 30
-                };
-                btnRecompute.Click += (s, e) =>
-                {
-                    AutoComputeAndAssign(roi);
-                    RenderHsv();
-                    pictureBox.Invalidate();
-                };
-                t.Controls.Add(btnRecompute);
-                t.SetColumnSpan(btnRecompute, 2);
-
-               
-                AddHiddenCheckbox(t, roi);
-
-                panelContent.Controls.Add(t);
-            }
-
-
 
             cboMode.SelectedIndexChanged += (s, e) =>
             {
                 roi.Mode = cboMode.SelectedItem.ToString();
                 SaveRoi();
-                if (roi.Mode == "HSV")
-                    RenderHsv();
-                else
-                    RenderBarcode();
+                Render();
             };
 
-            if (roi.Mode == "HSV") RenderHsv(); else RenderBarcode();
+            Render();
         }
 
-        private void AutoComputeAndAssign(RoiRegion roi)
+        // -------------------------------------------------------------------
+        // PANEL RENDERERS
+        // -------------------------------------------------------------------
+
+        private void RenderBarcodePanel(Panel panel, RoiRegion roi)
+        {
+            panel.Controls.Clear(); // FIX DUPLICATION
+
+            var t = CreateInnerTable();
+            AddReadOnlyRow(t, "X", roi.X.ToString());
+            AddReadOnlyRow(t, "Y", roi.Y.ToString());
+            AddReadOnlyRow(t, "Width", roi.Width.ToString());
+            AddReadOnlyRow(t, "Height", roi.Height.ToString());
+
+            var cboAlg = new ComboBox
+            {
+                Dock = DockStyle.Fill,
+                DropDownStyle = ComboBoxStyle.DropDownList
+            };
+            cboAlg.Items.AddRange(Enum.GetValues(typeof(BarcodeAlgorithm)).Cast<object>().ToArray());
+            cboAlg.SelectedItem = roi.Algorithm ?? BarcodeAlgorithm.QRCode;
+
+            cboAlg.SelectedIndexChanged += (s, e) =>
+            {
+                roi.Algorithm = (BarcodeAlgorithm)cboAlg.SelectedItem;
+                SaveRoi();
+                pictureBox.Invalidate();
+            };
+
+            AddControlRow(t, CreateLabel("Format:"), cboAlg);
+
+            var txtLength = new TextBox
+            {
+                Dock = DockStyle.Fill,
+                Text = roi.ExpectedLength > 0 ? roi.ExpectedLength.ToString() : ""
+            };
+
+            txtLength.TextChanged += (s, e) =>
+            {
+                if (int.TryParse(txtLength.Text, out int length))
+                {
+                    roi.ExpectedLength = length;
+                    SaveRoi();
+                }
+            };
+            AddControlRow(t, CreateLabel("Length:"), txtLength);
+
+            AddHiddenCheckbox(t, roi);
+            panel.Controls.Add(t);
+        }
+
+        private void RenderHsvPanel(Panel panel, RoiRegion roi)
+        {
+            panel.Controls.Clear(); // FIX DUPLICATION
+
+            var t = CreateInnerTable();
+            AddReadOnlyRow(t, "X", roi.X.ToString());
+            AddReadOnlyRow(t, "Y", roi.Y.ToString());
+            AddReadOnlyRow(t, "Width", roi.Width.ToString());
+            AddReadOnlyRow(t, "Height", roi.Height.ToString());
+
+            AutoComputeHSVIfNeeded(roi);
+
+            AddReadOnlyRow(t, "H", $"{roi.Lower.H} - {roi.Upper.H}");
+            AddReadOnlyRow(t, "S", $"{roi.Lower.S} - {roi.Upper.S}");
+            AddReadOnlyRow(t, "V", $"{roi.Lower.V} - {roi.Upper.V}");
+
+            var btn = new Button { Text = "Get HSV", Height = 30, Dock = DockStyle.Top };
+            btn.Click += (s, e) =>
+            {
+                AutoComputeHSVIfNeeded(roi, true);
+                RenderHsvPanel(panel, roi);
+                pictureBox.Invalidate();
+            };
+            t.Controls.Add(btn);
+            t.SetColumnSpan(btn, 2);
+
+            AddHiddenCheckbox(t, roi);
+            panel.Controls.Add(t);
+        }
+
+        private void RenderTemplatePanel(Panel panel, RoiRegion roi)
+        {
+            panel.Controls.Clear(); // FIX DUPLICATION
+
+            var t = CreateInnerTable();
+            AddReadOnlyRow(t, "X", roi.X.ToString());
+            AddReadOnlyRow(t, "Y", roi.Y.ToString());
+            AddReadOnlyRow(t, "Width", roi.Width.ToString());
+            AddReadOnlyRow(t, "Height", roi.Height.ToString());
+
+            var btn = new Button
+            {
+                Text = "Get Template",
+                Height = 30,
+                Dock = DockStyle.Top
+            };
+
+            btn.Click += (s, e) =>
+            {
+                GetTemplateFromRoi(roi);
+                RenderTemplatePanel(panel, roi);
+            };
+
+            t.Controls.Add(btn);
+            t.SetColumnSpan(btn, 2);
+
+            if (roi.Template != null)
+            {
+                AddReadOnlyRow(t, "Template Size", $"{roi.Template.Width} x {roi.Template.Height}");
+                AddReadOnlyRow(t, "Match Score", roi.MatchScore.ToString("F3"));
+            }
+
+            AddHiddenCheckbox(t, roi);
+            panel.Controls.Add(t);
+        }
+
+        // -------------------------------------------------------------------
+        // TEMPLATE EXTRACTION
+        // -------------------------------------------------------------------
+
+        private void GetTemplateFromRoi(RoiRegion roi)
         {
             if (currentFovBitmap == null) return;
-            var rect = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
+
+            Rectangle rect = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
             rect.Intersect(new Rectangle(0, 0, currentFovBitmap.Width, currentFovBitmap.Height));
             if (rect.Width <= 0 || rect.Height <= 0) return;
 
-            using (var roiBmp = new Bitmap(rect.Width, rect.Height))
-            {
-                using (var g = Graphics.FromImage(roiBmp))
-                {
-                    g.DrawImage(currentFovBitmap, new Rectangle(0, 0, rect.Width, rect.Height), rect, GraphicsUnit.Pixel);
-                }
+            roi.Template?.Dispose();
+            roi.Template = null;
 
-                var (lower, upper, _) = hsvAutoService.Compute(roiBmp, huePadding: 2, svPadding: 10);
-                roi.Lower = lower;
-                roi.Upper = upper;
-                SaveRoi();
+            Bitmap bmp = new Bitmap(rect.Width, rect.Height);
+            using (Graphics g = Graphics.FromImage(bmp))
+            {
+                g.DrawImage(currentFovBitmap, new Rectangle(0, 0, rect.Width, rect.Height), rect, GraphicsUnit.Pixel);
             }
+
+            roi.Template = bmp;
+            roi.MatchScore = 0;
+            roi.MatchRect = Rectangle.Empty;
+
+            SaveRoi();
         }
+
+        // -------------------------------------------------------------------
+        // HSV AUTO COMPUTE
+        // -------------------------------------------------------------------
+
+        private void AutoComputeHSVIfNeeded(RoiRegion roi, bool force = false)
+        {
+            if (!force && roi.Lower != null && roi.Upper != null)
+                return;
+
+            if (currentFovBitmap == null) return;
+
+            Rectangle rect = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
+            rect.Intersect(new Rectangle(0, 0, currentFovBitmap.Width, currentFovBitmap.Height));
+            if (rect.Width <= 0 || rect.Height <= 0) return;
+
+            var bmp = new Bitmap(rect.Width, rect.Height);
+            using (Graphics g = Graphics.FromImage(bmp))
+                g.DrawImage(currentFovBitmap, new Rectangle(0, 0, rect.Width, rect.Height), rect, GraphicsUnit.Pixel);
+
+            var (lower, upper, _) = hsvAutoService.Compute(bmp, 2, 10);
+
+            roi.Lower = lower;
+            roi.Upper = upper;
+            SaveRoi();
+        }
+
+        // -------------------------------------------------------------------
+        // MATCHING
+        // -------------------------------------------------------------------
+
+        public void RunTemplateMatching(RoiRegion roi)
+        {
+            if (roi == null || roi.Template == null || currentFovBitmap == null) return;
+
+             Mat img = BitmapConverter.ToMat(currentFovBitmap);
+             Mat templ = BitmapConverter.ToMat(roi.Template);
+
+            if (img.Width < templ.Width || img.Height < templ.Height)
+            {
+                roi.MatchScore = 0;
+                roi.MatchRect = Rectangle.Empty;
+                SaveRoi();
+                return;
+            }
+
+             Mat result = new Mat(img.Rows - templ.Rows + 1, img.Cols - templ.Cols + 1, MatType.CV_32FC1);
+            Cv2.MatchTemplate(img, templ, result, TemplateMatchModes.CCoeffNormed);
+
+            result.MinMaxLoc(out double _, out double maxVal, out _, out OpenCvSharp.Point maxLoc);
+
+            roi.MatchScore = maxVal;
+            roi.MatchRect = new Rectangle(maxLoc.X, maxLoc.Y, templ.Width, templ.Height);
+            SaveRoi();
+        }
+
+        // -------------------------------------------------------------------
+        // HELPERS
+        // -------------------------------------------------------------------
 
         private void SaveRoi()
         {
@@ -229,20 +328,15 @@ namespace MPV.Renderers
             return t;
         }
 
-        private Label CreateLabel(string text) =>
-            new Label { Text = text, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, Font = new Font("Segoe UI", 9F, FontStyle.Bold) };
+        private Label CreateLabel(string text)
+            => new Label { Text = text, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft };
 
         private void AddReadOnlyRow(TableLayoutPanel t, string label, string value)
         {
             int row = t.RowCount;
             t.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             t.Controls.Add(CreateLabel(label + ":"), 0, row);
-            t.Controls.Add(new TextBox
-            {
-                Text = value,
-                ReadOnly = true,
-                Dock = DockStyle.Fill
-            }, 1, row);
+            t.Controls.Add(new TextBox { Text = value, ReadOnly = true, Dock = DockStyle.Fill }, 1, row);
             t.RowCount++;
         }
 
@@ -257,19 +351,14 @@ namespace MPV.Renderers
 
         private void AddHiddenCheckbox(TableLayoutPanel t, RoiRegion roi)
         {
-            var chkHidden = new CheckBox
+            var chk = new CheckBox { Text = "Hidden", Checked = roi.IsHidden, Dock = DockStyle.Fill };
+            chk.CheckedChanged += (s, e) =>
             {
-                Text = "Hidden",
-                Checked = roi.IsHidden,
-                Dock = DockStyle.Fill
-            };
-            chkHidden.CheckedChanged += (s, e) =>
-            {
-                roi.IsHidden = chkHidden.Checked;
+                roi.IsHidden = chk.Checked;
                 SaveRoi();
                 pictureBox.Invalidate();
             };
-            AddControlRow(t, CreateLabel("IsHidden:"), chkHidden);
+            AddControlRow(t, CreateLabel("IsHidden:"), chk);
         }
     }
 }

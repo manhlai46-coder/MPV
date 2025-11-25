@@ -46,16 +46,16 @@ namespace MPV.Renderers
                     (int)(roi.Height * scaleY)
                 );
 
-                // Vì đã bỏ IsDetected khỏi RoiRegion, ta xác định màu theo Mode + dữ liệu hiện có
+                
                 Color baseColor;
                 if (roi.Mode == "HSV")
                 {
-                    // Nếu đã auto tính Lower/Upper thì coi như "đã sẵn sàng" -> xanh lá
+   
                     baseColor = (roi.Lower != null && roi.Upper != null) ? Color.LimeGreen : Color.Red;
                 }
-                else // Barcode mode
+                else 
                 {
-                    // Không còn IsDetected, hiển thị mặc định đỏ (có thể sửa sau nếu cần lưu trạng thái tạm)
+   
                     baseColor = Color.Red;
                 }
 

@@ -19,7 +19,6 @@ namespace MPV
         private readonly HsvAutoService hsvAutoService = new HsvAutoService();
         private readonly RoiRenderer roiRenderer;
         private ContextMenuStrip contextMenu;
-
         private Bitmap _bitmap;
         private Rectangle _selectRectangle;
         private Point _startPoint;
@@ -27,20 +26,12 @@ namespace MPV
         private bool _drawMode = false;
         private bool _isUpdatingRoi = false;
         private bool _showRoiOnImage = false;
-
         private int selectedFovIndex = -1;
         private int selectedRoiIndex = -1;
-
         private List<FovRegion> fovList = new List<FovRegion>();
-        private List<RoiRegion> roiList = new List<RoiRegion>();
-
-        // Last pass/fail results (true=PASS, false=FAIL)
+        private List<RoiRegion> roiList = new List<RoiRegion>();      
         private readonly Dictionary<(int fov, int roi), bool> _lastTestResults = new Dictionary<(int fov, int roi), bool>();
-
-        // Show only selected ROI
-        private bool _singleRoiMode = false;
-
-        // Show colored results for ALL ROIs after Run
+        private bool _singleRoiMode = false;     
         private bool _showRunResults = false;
 
         public Form1()
@@ -164,7 +155,7 @@ namespace MPV
                 if (selectedRoiIndex >= 0 && selectedRoiIndex < roiList.Count)
                 {
                     _singleRoiMode = true;
-                    _showRunResults = false; // focus only on selected ROI
+                    _showRunResults = false; 
                     pictureBox1.Invalidate();
 
                     var propertyPanel = new RoiPropertyPanel(
