@@ -58,6 +58,13 @@ namespace MPV
         private void Form1_Load(object sender, EventArgs e)
         {
             InitializeContextMenu();
+
+            // Allow the form to receive key events first so F5 can trigger testing
+            this.KeyPreview = true;
+
+            // Hide the Test button (you can also remove it from the designer)
+         
+
             try
             {
                 LoadFovToTreeView();
@@ -647,7 +654,8 @@ namespace MPV
             pictureBox1.Invalidate();
         }
 
-        private void btn_test_Click(object sender, EventArgs e)
+        // Extracted from btn_test_Click so F5 can reuse it
+        private void TestSelectedRoi()
         {
             if (selectedFovIndex < 0 || selectedFovIndex >= fovList.Count)
             {
@@ -699,7 +707,6 @@ namespace MPV
 
                     pass = inRange;
                 }
-
                 else
                 {
                     var algorithm = roi.Algorithm ?? BarcodeAlgorithm.QRCode;
@@ -714,9 +721,7 @@ namespace MPV
 
                     pass = !string.IsNullOrWhiteSpace(decoded) && passLength;
                 }
-
             }
-
 
             _lastTestResults[(selectedFovIndex, selectedRoiIndex)] = pass;
             _singleRoiMode = true;
@@ -724,6 +729,23 @@ namespace MPV
             pictureBox1.Invalidate();
 
             MessageBox.Show(pass ? "PASS" : "FAIL");
+        }
+
+        private void btn_test_Click(object sender, EventArgs e)
+        {
+            // Optional: keep for compatibility; can be removed if the button is deleted
+            TestSelectedRoi();
+        }
+
+        // Capture F5 anywhere on the form to run the single-ROI Test
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            if ((keyData & Keys.KeyCode) == Keys.F5)
+            {
+                TestSelectedRoi();
+                return true; // handled
+            }
+            return base.ProcessCmdKey(ref msg, keyData);
         }
     }
 }
