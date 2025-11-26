@@ -33,7 +33,7 @@ namespace MPV
         private readonly Dictionary<(int fov, int roi), bool> _lastTestResults = new Dictionary<(int fov, int roi), bool>();
         private bool _singleRoiMode = false;     
         private bool _showRunResults = false;
-
+       //AppDomain.CurrentDomain
         public Form1()
         {
             InitializeComponent();
@@ -49,21 +49,58 @@ namespace MPV
         {
             contextMenu = new ContextMenuStrip();
             var deleteItem = new ToolStripMenuItem("Xóa");
+            var addfovItem = new ToolStripMenuItem("Add FOV");
             deleteItem.Click += MenuDelete_Click;
+            addfovItem.Click += AddfovItem_Click;
             contextMenu.Items.Add(deleteItem);
-
+            contextMenu.Items.Add(addfovItem);
+            
             trv1.ContextMenuStrip = contextMenu;
+        }
+
+        private void AddfovItem_Click(object sender, EventArgs e)
+        {
+            using (var ofd = new OpenFileDialog())
+            {
+                ofd.Filter = "Image Files|*.png;*.jpg;*.jpeg;*.bmp";
+                if (ofd.ShowDialog() == DialogResult.OK)
+                {
+                    var newFov = new FovRegion
+                    {
+                        ImagePath = ofd.FileName,
+                        Rois = new List<RoiRegion>()
+                    };
+
+                    fovManager.Add(newFov);
+                    LoadFovToTreeView();
+
+                    fovList = fovManager.Load();
+                    selectedFovIndex = fovList.Count - 1;
+                    roiList = fovList[selectedFovIndex].Rois;
+
+                    if (File.Exists(ofd.FileName))
+                    {
+                        _bitmap = new Bitmap(ofd.FileName);
+                        pictureBox1.Image = _bitmap;
+                        pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+                        _showRoiOnImage = true;
+                        pictureBox1.Invalidate();
+                    }
+
+                    MessageBox.Show("Đã thêm FOV mới với ảnh: " + Path.GetFileName(ofd.FileName));
+                }
+            }
         }
 
         private void Form1_Load(object sender, EventArgs e)
         {
             InitializeContextMenu();
 
-            // Allow the form to receive key events first so F5 can trigger testing
+           
             this.KeyPreview = true;
 
-            // Hide the Test button (you can also remove it from the designer)
-         
+           
+            ptr_template.Enabled = false;
 
             try
             {
@@ -97,7 +134,7 @@ namespace MPV
                 var fov = fovList[i];
                 var fovNode = new TreeNode($"FOV {i + 1}");
                 fovNode.Nodes.Add($"Image: {Path.GetFileName(fov.ImagePath)}");
-
+              
                 for (int j = 0; j < fov.Rois.Count; j++)
                 {
                     var roi = fov.Rois[j];
@@ -126,7 +163,7 @@ namespace MPV
                 selectedFovIndex = fovIndex - 1;
                 selectedRoiIndex = -1;
                 _singleRoiMode = false;
-                _showRunResults = false; // leaving run visualization when changing FOV
+                _showRunResults = false; 
 
                 if (selectedFovIndex >= 0 && selectedFovIndex < fovList.Count)
                 {
@@ -544,115 +581,9 @@ namespace MPV
             }
         }
 
-        private void btnAddFov_Click_1(object sender, EventArgs e)
-        {
-            using (var ofd = new OpenFileDialog())
-            {
-                ofd.Filter = "Image Files|*.png;*.jpg;*.jpeg;*.bmp";
-                if (ofd.ShowDialog() == DialogResult.OK)
-                {
-                    var newFov = new FovRegion
-                    {
-                        ImagePath = ofd.FileName,
-                        Rois = new List<RoiRegion>()
-                    };
+    
 
-                    fovManager.Add(newFov);
-                    LoadFovToTreeView();
-
-                    fovList = fovManager.Load();
-                    selectedFovIndex = fovList.Count - 1;
-                    roiList = fovList[selectedFovIndex].Rois;
-
-                    if (File.Exists(ofd.FileName))
-                    {
-                        _bitmap = new Bitmap(ofd.FileName);
-                        pictureBox1.Image = _bitmap;
-                        pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
-                        _showRoiOnImage = true;
-                        pictureBox1.Invalidate();
-                    }
-
-                    MessageBox.Show("Đã thêm FOV mới với ảnh: " + Path.GetFileName(ofd.FileName));
-                }
-            }
-        }
-
-        private void btnrun_Click_1(object sender, EventArgs e)
-        {
-          
-            if (selectedFovIndex < 0 || selectedFovIndex >= fovList.Count)
-            {
-                MessageBox.Show("Hãy chọn FOV trước.");
-                return;
-            }
-            if (!File.Exists(fovList[selectedFovIndex].ImagePath))
-            {
-                MessageBox.Show("Không tìm thấy ảnh FOV.");
-                return;
-            }
-
-            var fov = fovList[selectedFovIndex];
-            _bitmap = new Bitmap(fov.ImagePath);
-            pictureBox1.Image = _bitmap;
-            pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
-            roiList = fov.Rois;
-
-            _lastTestResults.Clear();
-
-            for (int i = 0; i < roiList.Count; i++)
-            {
-                var roi = roiList[i];
-                if (roi.IsHidden) continue;
-
-                bool pass = false;
-                Rectangle rect = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
-                rect.Intersect(new Rectangle(0, 0, _bitmap.Width, _bitmap.Height));
-                if (rect.Width <= 0 || rect.Height <= 0)
-                {
-                    _lastTestResults[(selectedFovIndex, i)] = false;
-                    continue;
-                }
-
-                using (var roiBmp = new Bitmap(rect.Width, rect.Height))
-                using (var g = Graphics.FromImage(roiBmp))
-                {
-                    g.DrawImage(_bitmap, new Rectangle(0, 0, rect.Width, rect.Height), rect, GraphicsUnit.Pixel);
-                    if (string.Equals(roi.Mode, "HSV", StringComparison.OrdinalIgnoreCase))
-                    {
-                        var (lower, upper, stats) = hsvAutoService.Compute(roiBmp, 2, 10);
-                        roi.Lower = lower;
-                        roi.Upper = upper;
-                        var lowerRange = new HsvRange(lower.H, lower.H, lower.S, lower.S, lower.V, lower.V);
-                        var upperRange = new HsvRange(upper.H, upper.H, upper.S, upper.S, upper.V, upper.V);
-                        double matchPct;
-                        pass = hsvService.DetectColor(roiBmp, lowerRange, upperRange, out matchPct);
-                    }
-                    else
-                    {
-                        var algorithm = roi.Algorithm ?? BarcodeAlgorithm.QRCode;
-                        string decoded = barcodeService.Decode(roiBmp, algorithm);
-                        txt1.Text = decoded;
-
-                        bool passLength = true;
-                        if (roi.ExpectedLength > 0)
-                        {
-                            passLength = decoded?.Length == roi.ExpectedLength;
-                        }
-
-                        pass = !string.IsNullOrWhiteSpace(decoded) && passLength;
-                    }
-                }
-
-                _lastTestResults[(selectedFovIndex, i)] = pass;
-            }
-
-            
-            _showRunResults = true;
-            _singleRoiMode = false;
-            selectedRoiIndex = -1;
-            pictureBox1.Invalidate();
-        }
+        
 
         // Extracted from btn_test_Click so F5 can reuse it
         private void TestSelectedRoi()
@@ -746,6 +677,98 @@ namespace MPV
                 return true; // handled
             }
             return base.ProcessCmdKey(ref msg, keyData);
+        }
+
+       
+
+        private void exitToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var result = MessageBox.Show("You want to Exit", "OK",
+                MessageBoxButtons.OKCancel
+                );
+            if (result == DialogResult.OK)
+            {
+                Application.Exit();
+            }
+            else
+            {
+
+            }
+        }
+
+        private void ảutoRunToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (selectedFovIndex < 0 || selectedFovIndex >= fovList.Count)
+            {
+                MessageBox.Show("Hãy chọn FOV trước.");
+                return;
+            }
+            if (!File.Exists(fovList[selectedFovIndex].ImagePath))
+            {
+                MessageBox.Show("Không tìm thấy ảnh FOV.");
+                return;
+            }
+
+            var fov = fovList[selectedFovIndex];
+            _bitmap = new Bitmap(fov.ImagePath);
+            pictureBox1.Image = _bitmap;
+            pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+            roiList = fov.Rois;
+
+            _lastTestResults.Clear();
+
+            for (int i = 0; i < roiList.Count; i++)
+            {
+                var roi = roiList[i];
+                if (roi.IsHidden) continue;
+
+                bool pass = false;
+                Rectangle rect = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
+                rect.Intersect(new Rectangle(0, 0, _bitmap.Width, _bitmap.Height));
+                if (rect.Width <= 0 || rect.Height <= 0)
+                {
+                    _lastTestResults[(selectedFovIndex, i)] = false;
+                    continue;
+                }
+
+                using (var roiBmp = new Bitmap(rect.Width, rect.Height))
+                using (var g = Graphics.FromImage(roiBmp))
+                {
+                    g.DrawImage(_bitmap, new Rectangle(0, 0, rect.Width, rect.Height), rect, GraphicsUnit.Pixel);
+                    if (string.Equals(roi.Mode, "HSV", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var (lower, upper, stats) = hsvAutoService.Compute(roiBmp, 2, 10);
+                        roi.Lower = lower;
+                        roi.Upper = upper;
+                        var lowerRange = new HsvRange(lower.H, lower.H, lower.S, lower.S, lower.V, lower.V);
+                        var upperRange = new HsvRange(upper.H, upper.H, upper.S, upper.S, upper.V, upper.V);
+                        double matchPct;
+                        pass = hsvService.DetectColor(roiBmp, lowerRange, upperRange, out matchPct);
+                    }
+                    else
+                    {
+                        var algorithm = roi.Algorithm ?? BarcodeAlgorithm.QRCode;
+                        string decoded = barcodeService.Decode(roiBmp, algorithm);
+                        txt1.Text = decoded;
+
+                        bool passLength = true;
+                        if (roi.ExpectedLength > 0)
+                        {
+                            passLength = decoded?.Length == roi.ExpectedLength;
+                        }
+
+                        pass = !string.IsNullOrWhiteSpace(decoded) && passLength;
+                    }
+                }
+
+                _lastTestResults[(selectedFovIndex, i)] = pass;
+            }
+
+
+            _showRunResults = true;
+            _singleRoiMode = false;
+            selectedRoiIndex = -1;
+            pictureBox1.Invalidate();
         }
     }
 }
