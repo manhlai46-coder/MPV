@@ -33,6 +33,7 @@ namespace MPV
         private readonly Dictionary<(int fov, int roi), bool> _lastTestResults = new Dictionary<(int fov, int roi), bool>();
         private bool _singleRoiMode = false;     
         private bool _showRunResults = false;
+
        //AppDomain.CurrentDomain
         public Form1()
         {
@@ -54,8 +55,6 @@ namespace MPV
             addfovItem.Click += AddfovItem_Click;
             contextMenu.Items.Add(deleteItem);
             contextMenu.Items.Add(addfovItem);
-            
-            trv1.ContextMenuStrip = contextMenu;
         }
 
         private void AddfovItem_Click(object sender, EventArgs e)
@@ -111,16 +110,18 @@ namespace MPV
                 MessageBox.Show("Lỗi khi load JSON: " + ex.Message);
                 LoggerService.Error("Error loading JSON", ex);
             }
+            ToolTip toolTip = new ToolTip();
+            toolTip.SetToolTip(btn_Update, "Update roi");
         }
 
         private void LoadFovToTreeView()
         {
-            trv1.Nodes.Clear();
+            pn_property.Nodes.Clear();
             fovList = fovManager.Load();
 
             if (fovList.Count == 0)
             {
-                trv1.Nodes.Add("Chưa có FOV nào được lưu.");
+                pn_property.Nodes.Add("Chưa có FOV nào được lưu.");
                 _bitmap = null;
                 pictureBox1.Image = null;
                 roiList.Clear();
@@ -149,7 +150,7 @@ namespace MPV
                 root.Nodes.Add(fovNode);
             }
 
-            trv1.Nodes.Add(root);
+            pn_property.Nodes.Add(root);
             root.Expand();
         }
 
@@ -313,9 +314,9 @@ namespace MPV
 
                 if (e.Button == MouseButtons.Right)
                 {
-                    TreeNode node = trv1.GetNodeAt(e.X, e.Y);
+                    TreeNode node = pn_property.GetNodeAt(e.X, e.Y);
                     if (node != null)
-                        trv1.SelectedNode = node;
+                        pn_property.SelectedNode = node;
                 }
                 return;
             }
@@ -520,9 +521,8 @@ namespace MPV
 
         private void MenuDelete_Click(object sender, EventArgs e)
         {
-            if (trv1.SelectedNode == null) return;
-
-            if (trv1.SelectedNode.Text.StartsWith("ROI ") && selectedFovIndex >= 0 && selectedRoiIndex >= 0)
+            if (pn_property.SelectedNode == null) return;
+            if (pn_property.SelectedNode.Text.StartsWith("ROI ") && selectedFovIndex >= 0 && selectedRoiIndex >= 0)
             {
                 var confirm = MessageBox.Show($"Xóa ROI {selectedRoiIndex + 1} trong FOV {selectedFovIndex + 1}?", "Xác nhận", MessageBoxButtons.YesNo);
                 if (confirm == DialogResult.Yes)
@@ -545,7 +545,7 @@ namespace MPV
                     panelImage.Controls.Clear();
                 }
             }
-            else if (trv1.SelectedNode.Text.StartsWith("FOV ") && selectedFovIndex >= 0)
+            else if (pn_property.SelectedNode.Text.StartsWith("FOV ") && selectedFovIndex >= 0)
             {
                 var confirm = MessageBox.Show($"Xóa FOV {selectedFovIndex + 1}?", "Xác nhận", MessageBoxButtons.YesNo);
                 if (confirm == DialogResult.Yes)
@@ -579,6 +579,7 @@ namespace MPV
                     panelImage.Controls.Clear();
                 }
             }
+
         }
 
     
@@ -642,7 +643,7 @@ namespace MPV
                 {
                     var algorithm = roi.Algorithm ?? BarcodeAlgorithm.QRCode;
                     string decoded = barcodeService.Decode(roiBmp, algorithm);
-                    txt1.Text = decoded;
+                  
 
                     bool passLength = true;
                     if (roi.ExpectedLength > 0)  
@@ -749,7 +750,7 @@ namespace MPV
                     {
                         var algorithm = roi.Algorithm ?? BarcodeAlgorithm.QRCode;
                         string decoded = barcodeService.Decode(roiBmp, algorithm);
-                        txt1.Text = decoded;
+                        
 
                         bool passLength = true;
                         if (roi.ExpectedLength > 0)
@@ -770,5 +771,23 @@ namespace MPV
             selectedRoiIndex = -1;
             pictureBox1.Invalidate();
         }
+
+        private void trv1_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Right)
+            {
+                TreeNode node = pn_property.GetNodeAt(e.X, e.Y);
+                if (node != null)
+                {
+                    pn_property.SelectedNode = node;
+                    if (node.Text.StartsWith("FOV ") || node.Text.StartsWith("ROI "))
+                    {
+                        contextMenu.Show(pn_property, e.Location);
+                    }
+                }
+            }
+        }
+
+        
     }
 }
