@@ -52,44 +52,12 @@ namespace MPV
             var deleteItem = new ToolStripMenuItem("Xóa");
             var addfovItem = new ToolStripMenuItem("Add FOV");
             deleteItem.Click += MenuDelete_Click;
-            addfovItem.Click += AddfovItem_Click;
+      
             contextMenu.Items.Add(deleteItem);
-            contextMenu.Items.Add(addfovItem);
+    
         }
 
-        private void AddfovItem_Click(object sender, EventArgs e)
-        {
-            using (var ofd = new OpenFileDialog())
-            {
-                ofd.Filter = "Image Files|*.png;*.jpg;*.jpeg;*.bmp";
-                if (ofd.ShowDialog() == DialogResult.OK)
-                {
-                    var newFov = new FovRegion
-                    {
-                        ImagePath = ofd.FileName,
-                        Rois = new List<RoiRegion>()
-                    };
-
-                    fovManager.Add(newFov);
-                    LoadFovToTreeView();
-
-                    fovList = fovManager.Load();
-                    selectedFovIndex = fovList.Count - 1;
-                    roiList = fovList[selectedFovIndex].Rois;
-
-                    if (File.Exists(ofd.FileName))
-                    {
-                        _bitmap = new Bitmap(ofd.FileName);
-                        pictureBox1.Image = _bitmap;
-                        pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
-                        _showRoiOnImage = true;
-                        pictureBox1.Invalidate();
-                    }
-
-                    MessageBox.Show("Đã thêm FOV mới với ảnh: " + Path.GetFileName(ofd.FileName));
-                }
-            }
-        }
+        
 
         private void Form1_Load(object sender, EventArgs e)
         {
@@ -788,6 +756,39 @@ namespace MPV
             }
         }
 
-        
+        private void btn_addfov_Click(object sender, EventArgs e)
+        {
+            using (var ofd = new OpenFileDialog())
+            {
+                ofd.Filter = "Image Files|*.png;*.jpg;*.jpeg;*.bmp";
+                if (ofd.ShowDialog() == DialogResult.OK)
+                {
+                    var newFov = new FovRegion
+                    {
+                        ImagePath = ofd.FileName,
+                        Rois = new List<RoiRegion>()
+                    };
+
+                    fovManager.Add(newFov);
+                    LoadFovToTreeView();
+
+                    fovList = fovManager.Load();
+                    selectedFovIndex = fovList.Count - 1;
+                    roiList = fovList[selectedFovIndex].Rois;
+
+                    if (File.Exists(ofd.FileName))
+                    {
+                        _bitmap = new Bitmap(ofd.FileName);
+                        pictureBox1.Image = _bitmap;
+                        pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+                        _showRoiOnImage = true;
+                        pictureBox1.Invalidate();
+                    }
+
+                    MessageBox.Show("Đã thêm FOV mới với ảnh: " + Path.GetFileName(ofd.FileName));
+                }
+            }
+            
+        }
     }
 }

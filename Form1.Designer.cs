@@ -43,10 +43,10 @@
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.splitContainer2 = new System.Windows.Forms.SplitContainer();
             this.panel1 = new System.Windows.Forms.Panel();
-            this.bindingSource1 = new System.Windows.Forms.BindingSource(this.components);
             this.splitContainer3 = new System.Windows.Forms.SplitContainer();
+            this.bindingSource1 = new System.Windows.Forms.BindingSource(this.components);
+            this.btn_addfov = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
-            this.panelImage.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.ptr_template)).BeginInit();
             this.menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
@@ -58,11 +58,11 @@
             this.splitContainer2.Panel2.SuspendLayout();
             this.splitContainer2.SuspendLayout();
             this.panel1.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.bindingSource1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer3)).BeginInit();
             this.splitContainer3.Panel1.SuspendLayout();
             this.splitContainer3.Panel2.SuspendLayout();
             this.splitContainer3.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.bindingSource1)).BeginInit();
             this.SuspendLayout();
             // 
             // pictureBox1
@@ -96,7 +96,7 @@
             // 
             // btn_Update
             // 
-            this.btn_Update.Location = new System.Drawing.Point(3, 3);
+            this.btn_Update.Location = new System.Drawing.Point(84, 359);
             this.btn_Update.Name = "btn_Update";
             this.btn_Update.Size = new System.Drawing.Size(75, 23);
             this.btn_Update.TabIndex = 7;
@@ -106,7 +106,7 @@
             // 
             // btnDrawRoi
             // 
-            this.btnDrawRoi.Location = new System.Drawing.Point(159, 58);
+            this.btnDrawRoi.Location = new System.Drawing.Point(165, 359);
             this.btnDrawRoi.Name = "btnDrawRoi";
             this.btnDrawRoi.Size = new System.Drawing.Size(75, 23);
             this.btnDrawRoi.TabIndex = 9;
@@ -117,8 +117,6 @@
             // panelImage
             // 
             this.panelImage.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
-            this.panelImage.Controls.Add(this.btnDrawRoi);
-            this.panelImage.Controls.Add(this.btn_Update);
             this.panelImage.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panelImage.Location = new System.Drawing.Point(0, 0);
             this.panelImage.Name = "panelImage";
@@ -222,6 +220,9 @@
             // 
             // splitContainer3.Panel1
             // 
+            this.splitContainer3.Panel1.Controls.Add(this.btnDrawRoi);
+            this.splitContainer3.Panel1.Controls.Add(this.btn_addfov);
+            this.splitContainer3.Panel1.Controls.Add(this.btn_Update);
             this.splitContainer3.Panel1.Controls.Add(this.pn_property);
             // 
             // splitContainer3.Panel2
@@ -230,6 +231,16 @@
             this.splitContainer3.Size = new System.Drawing.Size(242, 682);
             this.splitContainer3.SplitterDistance = 385;
             this.splitContainer3.TabIndex = 0;
+            // 
+            // btn_addfov
+            // 
+            this.btn_addfov.Location = new System.Drawing.Point(3, 359);
+            this.btn_addfov.Name = "btn_addfov";
+            this.btn_addfov.Size = new System.Drawing.Size(75, 23);
+            this.btn_addfov.TabIndex = 1;
+            this.btn_addfov.Text = "FOV";
+            this.btn_addfov.UseVisualStyleBackColor = true;
+            this.btn_addfov.Click += new System.EventHandler(this.btn_addfov_Click);
             // 
             // Form1
             // 
@@ -243,7 +254,6 @@
             this.Text = " ";
             this.Load += new System.EventHandler(this.Form1_Load);
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
-            this.panelImage.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.ptr_template)).EndInit();
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
@@ -256,11 +266,11 @@
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer2)).EndInit();
             this.splitContainer2.ResumeLayout(false);
             this.panel1.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.bindingSource1)).EndInit();
             this.splitContainer3.Panel1.ResumeLayout(false);
             this.splitContainer3.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer3)).EndInit();
             this.splitContainer3.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.bindingSource1)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -284,6 +294,7 @@
         private System.Windows.Forms.SplitContainer splitContainer2;
         private System.Windows.Forms.Panel panel1;
         private System.Windows.Forms.SplitContainer splitContainer3;
+        private System.Windows.Forms.Button btn_addfov;
     }
 }
 
