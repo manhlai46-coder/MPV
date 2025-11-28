@@ -32,7 +32,6 @@
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.pn_property = new System.Windows.Forms.TreeView();
             this.contextMenuTree = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.btn_Update = new System.Windows.Forms.Button();
             this.btnDrawRoi = new System.Windows.Forms.Button();
             this.panelImage = new System.Windows.Forms.Panel();
             this.ptr_template = new System.Windows.Forms.PictureBox();
@@ -44,7 +43,7 @@
             this.splitContainer2 = new System.Windows.Forms.SplitContainer();
             this.panel1 = new System.Windows.Forms.Panel();
             this.splitContainer3 = new System.Windows.Forms.SplitContainer();
-            this.bindingSource1 = new System.Windows.Forms.BindingSource(this.components);
+            this.btn_delete = new System.Windows.Forms.Button();
             this.btn_addfov = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.ptr_template)).BeginInit();
@@ -62,7 +61,6 @@
             this.splitContainer3.Panel1.SuspendLayout();
             this.splitContainer3.Panel2.SuspendLayout();
             this.splitContainer3.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.bindingSource1)).BeginInit();
             this.SuspendLayout();
             // 
             // pictureBox1
@@ -71,7 +69,7 @@
             this.pictureBox1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pictureBox1.Location = new System.Drawing.Point(0, 0);
             this.pictureBox1.Name = "pictureBox1";
-            this.pictureBox1.Size = new System.Drawing.Size(714, 682);
+            this.pictureBox1.Size = new System.Drawing.Size(718, 722);
             this.pictureBox1.TabIndex = 0;
             this.pictureBox1.TabStop = false;
             this.pictureBox1.Paint += new System.Windows.Forms.PaintEventHandler(this.pictureBox1_Paint);
@@ -84,33 +82,24 @@
             this.pn_property.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pn_property.Location = new System.Drawing.Point(0, 0);
             this.pn_property.Name = "pn_property";
-            this.pn_property.Size = new System.Drawing.Size(242, 385);
+            this.pn_property.Size = new System.Drawing.Size(244, 407);
             this.pn_property.TabIndex = 5;
             this.pn_property.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.trv1_AfterSelect);
-            this.pn_property.MouseDown += new System.Windows.Forms.MouseEventHandler(this.trv1_MouseDown);
+
             // 
             // contextMenuTree
             // 
             this.contextMenuTree.Name = "contextMenuStrip1";
             this.contextMenuTree.Size = new System.Drawing.Size(61, 4);
             // 
-            // btn_Update
-            // 
-            this.btn_Update.Location = new System.Drawing.Point(84, 359);
-            this.btn_Update.Name = "btn_Update";
-            this.btn_Update.Size = new System.Drawing.Size(75, 23);
-            this.btn_Update.TabIndex = 7;
-            this.btn_Update.Text = "Update Roi";
-            this.btn_Update.UseVisualStyleBackColor = true;
-            this.btn_Update.Click += new System.EventHandler(this.btn_Update_Click);
-            // 
             // btnDrawRoi
             // 
-            this.btnDrawRoi.Location = new System.Drawing.Point(165, 359);
+            this.btnDrawRoi.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
+            this.btnDrawRoi.Location = new System.Drawing.Point(84, 381);
             this.btnDrawRoi.Name = "btnDrawRoi";
             this.btnDrawRoi.Size = new System.Drawing.Size(75, 23);
             this.btnDrawRoi.TabIndex = 9;
-            this.btnDrawRoi.Text = "Vẽ Roi";
+            this.btnDrawRoi.Text = "MOV";
             this.btnDrawRoi.UseVisualStyleBackColor = true;
             this.btnDrawRoi.Click += new System.EventHandler(this.btnDrawRoi_Click);
             // 
@@ -120,7 +109,7 @@
             this.panelImage.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panelImage.Location = new System.Drawing.Point(0, 0);
             this.panelImage.Name = "panelImage";
-            this.panelImage.Size = new System.Drawing.Size(242, 293);
+            this.panelImage.Size = new System.Drawing.Size(244, 311);
             this.panelImage.TabIndex = 12;
             // 
             // ptr_template
@@ -140,7 +129,7 @@
             this.exitToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Size = new System.Drawing.Size(1156, 24);
+            this.menuStrip1.Size = new System.Drawing.Size(1162, 24);
             this.menuStrip1.TabIndex = 14;
             this.menuStrip1.Text = "menuStrip1";
             // 
@@ -162,7 +151,7 @@
             // exitToolStripMenuItem
             // 
             this.exitToolStripMenuItem.Name = "exitToolStripMenuItem";
-            this.exitToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
+            this.exitToolStripMenuItem.Size = new System.Drawing.Size(38, 20);
             this.exitToolStripMenuItem.Text = "Exit";
             this.exitToolStripMenuItem.Click += new System.EventHandler(this.exitToolStripMenuItem_Click);
             // 
@@ -180,8 +169,8 @@
             // splitContainer1.Panel2
             // 
             this.splitContainer1.Panel2.Controls.Add(this.splitContainer3);
-            this.splitContainer1.Size = new System.Drawing.Size(1156, 682);
-            this.splitContainer1.SplitterDistance = 910;
+            this.splitContainer1.Size = new System.Drawing.Size(1162, 722);
+            this.splitContainer1.SplitterDistance = 914;
             this.splitContainer1.TabIndex = 15;
             // 
             // splitContainer2
@@ -198,7 +187,7 @@
             // splitContainer2.Panel2
             // 
             this.splitContainer2.Panel2.Controls.Add(this.pictureBox1);
-            this.splitContainer2.Size = new System.Drawing.Size(910, 682);
+            this.splitContainer2.Size = new System.Drawing.Size(914, 722);
             this.splitContainer2.SplitterDistance = 192;
             this.splitContainer2.TabIndex = 0;
             // 
@@ -208,7 +197,7 @@
             this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panel1.Location = new System.Drawing.Point(0, 0);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(192, 682);
+            this.panel1.Size = new System.Drawing.Size(192, 722);
             this.panel1.TabIndex = 0;
             // 
             // splitContainer3
@@ -220,21 +209,33 @@
             // 
             // splitContainer3.Panel1
             // 
+            this.splitContainer3.Panel1.Controls.Add(this.btn_delete);
             this.splitContainer3.Panel1.Controls.Add(this.btnDrawRoi);
             this.splitContainer3.Panel1.Controls.Add(this.btn_addfov);
-            this.splitContainer3.Panel1.Controls.Add(this.btn_Update);
             this.splitContainer3.Panel1.Controls.Add(this.pn_property);
             // 
             // splitContainer3.Panel2
             // 
             this.splitContainer3.Panel2.Controls.Add(this.panelImage);
-            this.splitContainer3.Size = new System.Drawing.Size(242, 682);
-            this.splitContainer3.SplitterDistance = 385;
+            this.splitContainer3.Size = new System.Drawing.Size(244, 722);
+            this.splitContainer3.SplitterDistance = 407;
             this.splitContainer3.TabIndex = 0;
+            // 
+            // btn_delete
+            // 
+            this.btn_delete.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.btn_delete.Location = new System.Drawing.Point(166, 382);
+            this.btn_delete.Name = "btn_delete";
+            this.btn_delete.Size = new System.Drawing.Size(75, 23);
+            this.btn_delete.TabIndex = 10;
+            this.btn_delete.Text = "Delete";
+            this.btn_delete.UseVisualStyleBackColor = true;
+            this.btn_delete.Click += new System.EventHandler(this.btn_delete_Click);
             // 
             // btn_addfov
             // 
-            this.btn_addfov.Location = new System.Drawing.Point(3, 359);
+            this.btn_addfov.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.btn_addfov.Location = new System.Drawing.Point(3, 382);
             this.btn_addfov.Name = "btn_addfov";
             this.btn_addfov.Size = new System.Drawing.Size(75, 23);
             this.btn_addfov.TabIndex = 1;
@@ -246,7 +247,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1156, 706);
+            this.ClientSize = new System.Drawing.Size(1162, 746);
             this.Controls.Add(this.splitContainer1);
             this.Controls.Add(this.menuStrip1);
             this.MainMenuStrip = this.menuStrip1;
@@ -270,7 +271,6 @@
             this.splitContainer3.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer3)).EndInit();
             this.splitContainer3.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.bindingSource1)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -281,7 +281,6 @@
         private System.Windows.Forms.PictureBox pictureBox1;
         private System.Windows.Forms.TreeView pn_property;
         private System.Windows.Forms.ContextMenuStrip contextMenuTree;
-        private System.Windows.Forms.Button btn_Update;
         private System.Windows.Forms.Button btnDrawRoi;
         private System.Windows.Forms.Panel panelImage;
         private System.Windows.Forms.PictureBox ptr_template;
@@ -290,11 +289,11 @@
         private System.Windows.Forms.ToolStripMenuItem ảutoRunToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem exitToolStripMenuItem;
         private System.Windows.Forms.SplitContainer splitContainer1;
-        private System.Windows.Forms.BindingSource bindingSource1;
         private System.Windows.Forms.SplitContainer splitContainer2;
         private System.Windows.Forms.Panel panel1;
         private System.Windows.Forms.SplitContainer splitContainer3;
         private System.Windows.Forms.Button btn_addfov;
+        private System.Windows.Forms.Button btn_delete;
     }
 }
 
