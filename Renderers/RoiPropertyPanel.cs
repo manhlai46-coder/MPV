@@ -264,7 +264,7 @@ namespace MPV.Renderers
             using (Graphics g = Graphics.FromImage(bmp))
                 g.DrawImage(currentFovBitmap, new Rectangle(0, 0, rect.Width, rect.Height), rect, GraphicsUnit.Pixel);
 
-            var (lower, upper, _) = hsvAutoService.Compute(bmp, 2, 10);
+            var (lower, upper, _) = hsvAutoService.Compute(bmp, 15, 10);
 
             roi.Lower = lower;
             roi.Upper = upper;

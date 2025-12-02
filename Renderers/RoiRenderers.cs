@@ -21,7 +21,7 @@ namespace MPV.Renderers
             if (selectionRect.Width <= 0 || selectionRect.Height <= 0)
                 return;
 
-            using (Pen pen = new Pen(Color.Red, 2))
+            using (Pen pen = new Pen(Color.Green, 2))
             {
                 pen.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
                 g.DrawRectangle(pen, selectionRect);
@@ -70,7 +70,7 @@ namespace MPV.Renderers
                 using (Font font = new Font("Arial", 9, FontStyle.Bold))
                 using (SolidBrush brush = new SolidBrush(baseColor))
                 {
-                    g.DrawString($"ROI {i + 1}", font, brush, displayRect.X, displayRect.Y - 18);
+                    g.DrawString($" {i + 1}", font, brush, displayRect.X, displayRect.Y - 18);
                 }
             }
         }

@@ -32,21 +32,30 @@
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.pn_property = new System.Windows.Forms.TreeView();
             this.contextMenuTree = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.btnDrawRoi = new System.Windows.Forms.Button();
-            this.panelImage = new System.Windows.Forms.Panel();
-            this.ptr_template = new System.Windows.Forms.PictureBox();
+            this.btnAddRoi = new System.Windows.Forms.Button();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.runToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.ảutoRunToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.splitContainer2 = new System.Windows.Forms.SplitContainer();
-            this.panel1 = new System.Windows.Forms.Panel();
+            this.pn_left = new System.Windows.Forms.Panel();
+            this.grpTemplate = new System.Windows.Forms.GroupBox();
+            this.btnUpdateTemplate = new System.Windows.Forms.Button();
+            this.ptr_template = new System.Windows.Forms.PictureBox();
+            this.lblKRange = new System.Windows.Forms.Label();
+            this.txtOkLower = new System.Windows.Forms.TextBox();
+            this.txtOkUpper = new System.Windows.Forms.TextBox();
+            this.chkReverse = new System.Windows.Forms.CheckBox();
+            this.lblScore = new System.Windows.Forms.Label();
+            this.txtLastScore = new System.Windows.Forms.TextBox();
+            this.lblCenter = new System.Windows.Forms.Label();
+            this.txtCenterX = new System.Windows.Forms.TextBox();
+            this.txtCenterY = new System.Windows.Forms.TextBox();
             this.splitContainer3 = new System.Windows.Forms.SplitContainer();
             this.btn_delete = new System.Windows.Forms.Button();
             this.btn_addfov = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.ptr_template)).BeginInit();
             this.menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
@@ -56,7 +65,9 @@
             this.splitContainer2.Panel1.SuspendLayout();
             this.splitContainer2.Panel2.SuspendLayout();
             this.splitContainer2.SuspendLayout();
-            this.panel1.SuspendLayout();
+            this.pn_left.SuspendLayout();
+            this.grpTemplate.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.ptr_template)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer3)).BeginInit();
             this.splitContainer3.Panel1.SuspendLayout();
             this.splitContainer3.Panel2.SuspendLayout();
@@ -85,42 +96,22 @@
             this.pn_property.Size = new System.Drawing.Size(244, 407);
             this.pn_property.TabIndex = 5;
             this.pn_property.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.trv1_AfterSelect);
-
             // 
             // contextMenuTree
             // 
             this.contextMenuTree.Name = "contextMenuStrip1";
             this.contextMenuTree.Size = new System.Drawing.Size(61, 4);
             // 
-            // btnDrawRoi
+            // btnAddRoi
             // 
-            this.btnDrawRoi.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
-            this.btnDrawRoi.Location = new System.Drawing.Point(84, 381);
-            this.btnDrawRoi.Name = "btnDrawRoi";
-            this.btnDrawRoi.Size = new System.Drawing.Size(75, 23);
-            this.btnDrawRoi.TabIndex = 9;
-            this.btnDrawRoi.Text = "MOV";
-            this.btnDrawRoi.UseVisualStyleBackColor = true;
-            this.btnDrawRoi.Click += new System.EventHandler(this.btnDrawRoi_Click);
-            // 
-            // panelImage
-            // 
-            this.panelImage.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
-            this.panelImage.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.panelImage.Location = new System.Drawing.Point(0, 0);
-            this.panelImage.Name = "panelImage";
-            this.panelImage.Size = new System.Drawing.Size(244, 311);
-            this.panelImage.TabIndex = 12;
-            // 
-            // ptr_template
-            // 
-            this.ptr_template.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
-            this.ptr_template.Dock = System.Windows.Forms.DockStyle.Top;
-            this.ptr_template.Location = new System.Drawing.Point(0, 0);
-            this.ptr_template.Name = "ptr_template";
-            this.ptr_template.Size = new System.Drawing.Size(192, 311);
-            this.ptr_template.TabIndex = 13;
-            this.ptr_template.TabStop = false;
+            this.btnAddRoi.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
+            this.btnAddRoi.Location = new System.Drawing.Point(84, 381);
+            this.btnAddRoi.Name = "btnAddRoi";
+            this.btnAddRoi.Size = new System.Drawing.Size(75, 23);
+            this.btnAddRoi.TabIndex = 9;
+            this.btnAddRoi.Text = "MOV";
+            this.btnAddRoi.UseVisualStyleBackColor = true;
+            this.btnAddRoi.Click += new System.EventHandler(this.btnAddRoi_Click_1);
             // 
             // menuStrip1
             // 
@@ -151,7 +142,7 @@
             // exitToolStripMenuItem
             // 
             this.exitToolStripMenuItem.Name = "exitToolStripMenuItem";
-            this.exitToolStripMenuItem.Size = new System.Drawing.Size(38, 20);
+            this.exitToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
             this.exitToolStripMenuItem.Text = "Exit";
             this.exitToolStripMenuItem.Click += new System.EventHandler(this.exitToolStripMenuItem_Click);
             // 
@@ -182,7 +173,7 @@
             // 
             // splitContainer2.Panel1
             // 
-            this.splitContainer2.Panel1.Controls.Add(this.panel1);
+            this.splitContainer2.Panel1.Controls.Add(this.pn_left);
             // 
             // splitContainer2.Panel2
             // 
@@ -191,14 +182,133 @@
             this.splitContainer2.SplitterDistance = 192;
             this.splitContainer2.TabIndex = 0;
             // 
-            // panel1
+            // pn_left
             // 
-            this.panel1.Controls.Add(this.ptr_template);
-            this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.panel1.Location = new System.Drawing.Point(0, 0);
-            this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(192, 722);
-            this.panel1.TabIndex = 0;
+            this.pn_left.Controls.Add(this.grpTemplate);
+            this.pn_left.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pn_left.Location = new System.Drawing.Point(0, 0);
+            this.pn_left.Name = "pn_left";
+            this.pn_left.Size = new System.Drawing.Size(192, 722);
+            this.pn_left.TabIndex = 0;
+            // 
+            // grpTemplate
+            // 
+            this.grpTemplate.Controls.Add(this.txtCenterY);
+            this.grpTemplate.Controls.Add(this.txtCenterX);
+            this.grpTemplate.Controls.Add(this.lblCenter);
+            this.grpTemplate.Controls.Add(this.txtLastScore);
+            this.grpTemplate.Controls.Add(this.lblScore);
+            this.grpTemplate.Controls.Add(this.chkReverse);
+            this.grpTemplate.Controls.Add(this.txtOkUpper);
+            this.grpTemplate.Controls.Add(this.txtOkLower);
+            this.grpTemplate.Controls.Add(this.lblKRange);
+            this.grpTemplate.Controls.Add(this.ptr_template);
+            this.grpTemplate.Controls.Add(this.btnUpdateTemplate);
+            this.grpTemplate.Dock = System.Windows.Forms.DockStyle.Top;
+            this.grpTemplate.Location = new System.Drawing.Point(0, 0);
+            this.grpTemplate.Name = "grpTemplate";
+            this.grpTemplate.Size = new System.Drawing.Size(192, 370);
+            this.grpTemplate.TabIndex = 0;
+            this.grpTemplate.TabStop = false;
+            this.grpTemplate.Text = "Template";
+            // 
+            // btnUpdateTemplate
+            // 
+            this.btnUpdateTemplate.Location = new System.Drawing.Point(12, 337);
+            this.btnUpdateTemplate.Name = "btnUpdateTemplate";
+            this.btnUpdateTemplate.Size = new System.Drawing.Size(168, 23);
+            this.btnUpdateTemplate.TabIndex = 9;
+            this.btnUpdateTemplate.Text = "Update Template";
+            this.btnUpdateTemplate.UseVisualStyleBackColor = true;
+            this.btnUpdateTemplate.Click += new System.EventHandler(this.btnUpdateTemplate_Click);
+            // 
+            // ptr_template
+            // 
+            this.ptr_template.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.ptr_template.Location = new System.Drawing.Point(12, 19);
+            this.ptr_template.Name = "ptr_template";
+            this.ptr_template.Size = new System.Drawing.Size(168, 160);
+            this.ptr_template.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
+            this.ptr_template.TabIndex = 10;
+            this.ptr_template.TabStop = false;
+            // 
+            // lblKRange
+            // 
+            this.lblKRange.AutoSize = true;
+            this.lblKRange.Location = new System.Drawing.Point(9, 193);
+            this.lblKRange.Name = "lblKRange";
+            this.lblKRange.Size = new System.Drawing.Size(59, 13);
+            this.lblKRange.TabIndex = 11;
+            this.lblKRange.Text = "K Range L/U";
+            // 
+            // txtOkLower
+            // 
+            this.txtOkLower.Location = new System.Drawing.Point(12, 209);
+            this.txtOkLower.Name = "txtOkLower";
+            this.txtOkLower.Size = new System.Drawing.Size(60, 20);
+            this.txtOkLower.TabIndex = 1;
+            this.txtOkLower.TextChanged += new System.EventHandler(this.txtOkLower_TextChanged);
+            // 
+            // txtOkUpper
+            // 
+            this.txtOkUpper.Location = new System.Drawing.Point(84, 209);
+            this.txtOkUpper.Name = "txtOkUpper";
+            this.txtOkUpper.Size = new System.Drawing.Size(60, 20);
+            this.txtOkUpper.TabIndex = 2;
+            this.txtOkUpper.TextChanged += new System.EventHandler(this.txtOkUpper_TextChanged);
+            // 
+            // chkReverse
+            // 
+            this.chkReverse.AutoSize = true;
+            this.chkReverse.Location = new System.Drawing.Point(12, 235);
+            this.chkReverse.Name = "chkReverse";
+            this.chkReverse.Size = new System.Drawing.Size(91, 17);
+            this.chkReverse.TabIndex = 3;
+            this.chkReverse.Text = "Reverse Search";
+            this.chkReverse.UseVisualStyleBackColor = true;
+            this.chkReverse.CheckedChanged += new System.EventHandler(this.chkReverse_CheckedChanged);
+            // 
+            // lblScore
+            // 
+            this.lblScore.AutoSize = true;
+            this.lblScore.Location = new System.Drawing.Point(9, 267);
+            this.lblScore.Name = "lblScore";
+            this.lblScore.Size = new System.Drawing.Size(40, 13);
+            this.lblScore.TabIndex = 7;
+            this.lblScore.Text = "Score:";
+            // 
+            // txtLastScore
+            // 
+            this.txtLastScore.Location = new System.Drawing.Point(60, 264);
+            this.txtLastScore.Name = "txtLastScore";
+            this.txtLastScore.ReadOnly = true;
+            this.txtLastScore.Size = new System.Drawing.Size(60, 20);
+            this.txtLastScore.TabIndex = 8;
+            // 
+            // lblCenter
+            // 
+            this.lblCenter.AutoSize = true;
+            this.lblCenter.Location = new System.Drawing.Point(9, 300);
+            this.lblCenter.Name = "lblCenter";
+            this.lblCenter.Size = new System.Drawing.Size(52, 13);
+            this.lblCenter.TabIndex = 9;
+            this.lblCenter.Text = "Center X/Y";
+            // 
+            // txtCenterX
+            // 
+            this.txtCenterX.Location = new System.Drawing.Point(12, 316);
+            this.txtCenterX.Name = "txtCenterX";
+            this.txtCenterX.ReadOnly = true;
+            this.txtCenterX.Size = new System.Drawing.Size(60, 20);
+            this.txtCenterX.TabIndex = 4;
+            // 
+            // txtCenterY
+            // 
+            this.txtCenterY.Location = new System.Drawing.Point(84, 316);
+            this.txtCenterY.Name = "txtCenterY";
+            this.txtCenterY.ReadOnly = true;
+            this.txtCenterY.Size = new System.Drawing.Size(60, 20);
+            this.txtCenterY.TabIndex = 5;
             // 
             // splitContainer3
             // 
@@ -210,13 +320,13 @@
             // splitContainer3.Panel1
             // 
             this.splitContainer3.Panel1.Controls.Add(this.btn_delete);
-            this.splitContainer3.Panel1.Controls.Add(this.btnDrawRoi);
+            this.splitContainer3.Panel1.Controls.Add(this.btnAddRoi);
             this.splitContainer3.Panel1.Controls.Add(this.btn_addfov);
             this.splitContainer3.Panel1.Controls.Add(this.pn_property);
             // 
             // splitContainer3.Panel2
             // 
-            this.splitContainer3.Panel2.Controls.Add(this.panelImage);
+             
             this.splitContainer3.Size = new System.Drawing.Size(244, 722);
             this.splitContainer3.SplitterDistance = 407;
             this.splitContainer3.TabIndex = 0;
@@ -255,7 +365,6 @@
             this.Text = " ";
             this.Load += new System.EventHandler(this.Form1_Load);
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.ptr_template)).EndInit();
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
             this.splitContainer1.Panel1.ResumeLayout(false);
@@ -266,9 +375,11 @@
             this.splitContainer2.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer2)).EndInit();
             this.splitContainer2.ResumeLayout(false);
-            this.panel1.ResumeLayout(false);
+            this.pn_left.ResumeLayout(false);
+            this.grpTemplate.ResumeLayout(false);
+            this.grpTemplate.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.ptr_template)).EndInit();
             this.splitContainer3.Panel1.ResumeLayout(false);
-            this.splitContainer3.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer3)).EndInit();
             this.splitContainer3.ResumeLayout(false);
             this.ResumeLayout(false);
@@ -281,19 +392,29 @@
         private System.Windows.Forms.PictureBox pictureBox1;
         private System.Windows.Forms.TreeView pn_property;
         private System.Windows.Forms.ContextMenuStrip contextMenuTree;
-        private System.Windows.Forms.Button btnDrawRoi;
-        private System.Windows.Forms.Panel panelImage;
-        private System.Windows.Forms.PictureBox ptr_template;
+        private System.Windows.Forms.Button btnAddRoi;
         private System.Windows.Forms.MenuStrip menuStrip1;
         private System.Windows.Forms.ToolStripMenuItem runToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem ảutoRunToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem exitToolStripMenuItem;
         private System.Windows.Forms.SplitContainer splitContainer1;
         private System.Windows.Forms.SplitContainer splitContainer2;
-        private System.Windows.Forms.Panel panel1;
+        private System.Windows.Forms.Panel pn_left;
         private System.Windows.Forms.SplitContainer splitContainer3;
         private System.Windows.Forms.Button btn_addfov;
         private System.Windows.Forms.Button btn_delete;
+        private System.Windows.Forms.GroupBox grpTemplate;
+        private System.Windows.Forms.Button btnUpdateTemplate;
+        private System.Windows.Forms.PictureBox ptr_template;
+        private System.Windows.Forms.Label lblKRange;
+        private System.Windows.Forms.TextBox txtOkLower;
+        private System.Windows.Forms.TextBox txtOkUpper;
+        private System.Windows.Forms.CheckBox chkReverse;
+        private System.Windows.Forms.Label lblScore;
+        private System.Windows.Forms.TextBox txtLastScore;
+        private System.Windows.Forms.Label lblCenter;
+        private System.Windows.Forms.TextBox txtCenterX;
+        private System.Windows.Forms.TextBox txtCenterY;
     }
 }
 
