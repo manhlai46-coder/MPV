@@ -8,6 +8,11 @@ namespace MPV.Models
 {
     public class RoiRegion
     {
+        public int Id { get; set; } // new
+        public string Name { get; set; } // new
+        public bool IsEnabled { get; set; } = true; // new (inverse of IsHidden)
+        public string Type { get; set; } = "Unknown"; // new
+
         public int X { get; set; }
         public int Y { get; set; }
         public int Width { get; set; }

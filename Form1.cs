@@ -575,9 +575,12 @@ namespace MPV
                 return;
             }
 
-            // Add a new ROI with default values
             var newRoi = new RoiRegion
             {
+                Id = fovList[selectedFovIndex].Rois.Count + 1,
+                Name = "SMD_" + (fovList[selectedFovIndex].Rois.Count + 1).ToString("D3"),
+                IsEnabled = true,
+                Type = "Unknown",
                 X = 0,
                 Y = 0,
                 Width = 0,
@@ -588,10 +591,8 @@ namespace MPV
             fovList[selectedFovIndex].Rois.Add(newRoi);
             fovManager.Save(fovList);
 
-            // Refresh TreeView
             LoadFovToTreeView();
 
-            // Find and select the FOV node again
             foreach (TreeNode node in pn_property.Nodes)
             {
                 foreach (TreeNode fovNode in node.Nodes)
@@ -604,10 +605,7 @@ namespace MPV
                     }
                 }
             }
-
-            //MessageBox.Show($"Đã thêm ROI mới vào FOV {selectedFovIndex + 1}.");
         }
-
         
         
         private void pictureBox1_Paint(object sender, PaintEventArgs e)

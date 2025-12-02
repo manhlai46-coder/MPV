@@ -54,50 +54,60 @@ namespace MPV.Renderers
                 Dock = DockStyle.Fill,
                 ColumnCount = 2,
                 AutoSize = true,
-                Padding = new Padding(10)
+                Padding = new Padding(5)
             };
-
-            root.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120F));
+            root.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90F));
             root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
 
-            var lblMode = CreateLabel("Mode:");
-            var cboMode = new ComboBox
+            AddReadOnlyRow(root, "ID", roi.Id.ToString());
+            var txtName = new TextBox { Text = roi.Name, Dock = DockStyle.Fill };
+            txtName.TextChanged += (s, e) => { roi.Name = txtName.Text; SaveRoi(); };
+            AddControlRow(root, CreateLabel("Name"), txtName);
+
+            var chkEnabled = new CheckBox { Checked = roi.IsEnabled, Dock = DockStyle.Left, Text = "" };
+            chkEnabled.CheckedChanged += (s, e) => { roi.IsEnabled = chkEnabled.Checked; SaveRoi(); };
+            AddControlRow(root, CreateLabel("Is Enabled"), chkEnabled);
+
+            // ROI group X/Y on first line, W/H on the next line, default styling
+            var roiGroup = new TableLayoutPanel { ColumnCount = 4, RowCount = 2, Dock = DockStyle.Top, AutoSize = true };
+            for (int i = 0; i < 4; i++) roiGroup.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            roiGroup.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            roiGroup.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+
+            roiGroup.Controls.Add(CreateMiniLabel("X"), 0, 0);
+            roiGroup.Controls.Add(CreateValueBox(roi.X), 1, 0);
+            roiGroup.Controls.Add(CreateMiniLabel("Y"), 2, 0);
+            roiGroup.Controls.Add(CreateValueBox(roi.Y), 3, 0);
+
+            roiGroup.Controls.Add(CreateMiniLabel("W"), 0, 1);
+            roiGroup.Controls.Add(CreateValueBox(roi.Width), 1, 1);
+            roiGroup.Controls.Add(CreateMiniLabel("H"), 2, 1);
+            roiGroup.Controls.Add(CreateValueBox(roi.Height), 3, 1);
+
+            AddControlRow(root, CreateLabel("ROI"), roiGroup);
+
+            var cboType = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList };
+            cboType.Items.AddRange(new object[] { "Unknown", "Component", "Marking" });
+            cboType.SelectedItem = roi.Type ?? "Unknown";
+            cboType.SelectedIndexChanged += (s, e) => { roi.Type = cboType.SelectedItem.ToString(); SaveRoi(); };
+            AddControlRow(root, CreateLabel("Type"), cboType);
+
+            var cboAlg = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList };
+            cboAlg.Items.AddRange(new object[] { "Barcode", "HSV", "TemplateMatching" });
+            // map existing Mode values
+            string currentMode = roi.Mode;
+            if (currentMode == "Template Matching") currentMode = "TemplateMatching";
+            cboAlg.SelectedItem = currentMode ?? "Barcode";
+            cboAlg.SelectedIndexChanged += (s, e) =>
             {
-                Dock = DockStyle.Fill,
-                DropDownStyle = ComboBoxStyle.DropDownList
-            };
-            cboMode.Items.AddRange(new object[] { "Barcode", "HSV", "Template Matching" });
-            cboMode.SelectedItem = roi.Mode ?? "Barcode";
-
-            root.Controls.Add(lblMode, 0, 0);
-            root.Controls.Add(cboMode, 1, 0);
-
-            var panelContent = new Panel
-            {
-                Dock = DockStyle.Fill,
-                AutoScroll = true
-            };
-            root.Controls.Add(panelContent, 0, 1);
-            root.SetColumnSpan(panelContent, 2);
-            panelImage.Controls.Add(root);
-
-            void Render()
-            {
-                panelContent.Controls.Clear();
-
-                if (roi.Mode == "HSV") RenderHsvPanel(panelContent, roi);
-                else if (roi.Mode == "Template Matching") RenderTemplatePanel(panelContent, roi);
-                else RenderBarcodePanel(panelContent, roi);
-            }
-
-            cboMode.SelectedIndexChanged += (s, e) =>
-            {
-                roi.Mode = cboMode.SelectedItem.ToString();
+                string sel = cboAlg.SelectedItem.ToString();
+                roi.Mode = sel == "TemplateMatching" ? "Template Matching" : sel;
                 SaveRoi();
-                Render();
+                pictureBox.Invalidate();
             };
+            AddControlRow(root, CreateLabel("Algorithm"), cboAlg);
 
-            Render();
+            panelImage.Controls.Add(root);
         }
 
         // -------------------------------------------------------------------
@@ -360,5 +370,9 @@ namespace MPV.Renderers
             };
             AddControlRow(t, CreateLabel("IsHidden:"), chk);
         }
+
+        // Default styles for mini labels and value boxes
+        private Label CreateMiniLabel(string text) => new Label { Text = text, AutoSize = true, Padding = new Padding(3, 3, 3, 3) };
+        private TextBox CreateValueBox(int v) => new TextBox { Text = v.ToString(), ReadOnly = true, Width = 60 };
     }
 }

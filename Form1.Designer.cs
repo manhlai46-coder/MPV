@@ -41,17 +41,17 @@
             this.splitContainer2 = new System.Windows.Forms.SplitContainer();
             this.pn_left = new System.Windows.Forms.Panel();
             this.grpTemplate = new System.Windows.Forms.GroupBox();
-            this.btnUpdateTemplate = new System.Windows.Forms.Button();
-            this.ptr_template = new System.Windows.Forms.PictureBox();
-            this.lblKRange = new System.Windows.Forms.Label();
-            this.txtOkLower = new System.Windows.Forms.TextBox();
-            this.txtOkUpper = new System.Windows.Forms.TextBox();
-            this.chkReverse = new System.Windows.Forms.CheckBox();
-            this.lblScore = new System.Windows.Forms.Label();
-            this.txtLastScore = new System.Windows.Forms.TextBox();
-            this.lblCenter = new System.Windows.Forms.Label();
-            this.txtCenterX = new System.Windows.Forms.TextBox();
             this.txtCenterY = new System.Windows.Forms.TextBox();
+            this.txtCenterX = new System.Windows.Forms.TextBox();
+            this.lblCenter = new System.Windows.Forms.Label();
+            this.txtLastScore = new System.Windows.Forms.TextBox();
+            this.lblScore = new System.Windows.Forms.Label();
+            this.chkReverse = new System.Windows.Forms.CheckBox();
+            this.txtOkUpper = new System.Windows.Forms.TextBox();
+            this.txtOkLower = new System.Windows.Forms.TextBox();
+            this.lblKRange = new System.Windows.Forms.Label();
+            this.ptr_template = new System.Windows.Forms.PictureBox();
+            this.btnUpdateTemplate = new System.Windows.Forms.Button();
             this.splitContainer3 = new System.Windows.Forms.SplitContainer();
             this.btn_delete = new System.Windows.Forms.Button();
             this.btn_addfov = new System.Windows.Forms.Button();
@@ -94,7 +94,7 @@
             this.pn_property.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pn_property.Location = new System.Drawing.Point(0, 0);
             this.pn_property.Name = "pn_property";
-            this.pn_property.Size = new System.Drawing.Size(244, 407);
+            this.pn_property.Size = new System.Drawing.Size(244, 337);
             this.pn_property.TabIndex = 5;
             this.pn_property.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.trv1_AfterSelect);
             // 
@@ -106,7 +106,7 @@
             // btnAddRoi
             // 
             this.btnAddRoi.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
-            this.btnAddRoi.Location = new System.Drawing.Point(84, 381);
+            this.btnAddRoi.Location = new System.Drawing.Point(81, 311);
             this.btnAddRoi.Name = "btnAddRoi";
             this.btnAddRoi.Size = new System.Drawing.Size(75, 23);
             this.btnAddRoi.TabIndex = 9;
@@ -213,15 +213,83 @@
             this.grpTemplate.TabStop = false;
             this.grpTemplate.Text = "Template";
             // 
-            // btnUpdateTemplate
+            // txtCenterY
             // 
-            this.btnUpdateTemplate.Location = new System.Drawing.Point(12, 337);
-            this.btnUpdateTemplate.Name = "btnUpdateTemplate";
-            this.btnUpdateTemplate.Size = new System.Drawing.Size(168, 23);
-            this.btnUpdateTemplate.TabIndex = 9;
-            this.btnUpdateTemplate.Text = "Update Template";
-            this.btnUpdateTemplate.UseVisualStyleBackColor = true;
-            this.btnUpdateTemplate.Click += new System.EventHandler(this.btnUpdateTemplate_Click);
+            this.txtCenterY.Location = new System.Drawing.Point(84, 316);
+            this.txtCenterY.Name = "txtCenterY";
+            this.txtCenterY.ReadOnly = true;
+            this.txtCenterY.Size = new System.Drawing.Size(60, 20);
+            this.txtCenterY.TabIndex = 5;
+            // 
+            // txtCenterX
+            // 
+            this.txtCenterX.Location = new System.Drawing.Point(12, 316);
+            this.txtCenterX.Name = "txtCenterX";
+            this.txtCenterX.ReadOnly = true;
+            this.txtCenterX.Size = new System.Drawing.Size(60, 20);
+            this.txtCenterX.TabIndex = 4;
+            // 
+            // lblCenter
+            // 
+            this.lblCenter.AutoSize = true;
+            this.lblCenter.Location = new System.Drawing.Point(9, 300);
+            this.lblCenter.Name = "lblCenter";
+            this.lblCenter.Size = new System.Drawing.Size(60, 13);
+            this.lblCenter.TabIndex = 9;
+            this.lblCenter.Text = "Center X/Y";
+            // 
+            // txtLastScore
+            // 
+            this.txtLastScore.Location = new System.Drawing.Point(60, 264);
+            this.txtLastScore.Name = "txtLastScore";
+            this.txtLastScore.ReadOnly = true;
+            this.txtLastScore.Size = new System.Drawing.Size(60, 20);
+            this.txtLastScore.TabIndex = 8;
+            // 
+            // lblScore
+            // 
+            this.lblScore.AutoSize = true;
+            this.lblScore.Location = new System.Drawing.Point(9, 267);
+            this.lblScore.Name = "lblScore";
+            this.lblScore.Size = new System.Drawing.Size(38, 13);
+            this.lblScore.TabIndex = 7;
+            this.lblScore.Text = "Score:";
+            // 
+            // chkReverse
+            // 
+            this.chkReverse.AutoSize = true;
+            this.chkReverse.Location = new System.Drawing.Point(12, 235);
+            this.chkReverse.Name = "chkReverse";
+            this.chkReverse.Size = new System.Drawing.Size(103, 17);
+            this.chkReverse.TabIndex = 3;
+            this.chkReverse.Text = "Reverse Search";
+            this.chkReverse.UseVisualStyleBackColor = true;
+            this.chkReverse.CheckedChanged += new System.EventHandler(this.chkReverse_CheckedChanged);
+            // 
+            // txtOkUpper
+            // 
+            this.txtOkUpper.Location = new System.Drawing.Point(84, 209);
+            this.txtOkUpper.Name = "txtOkUpper";
+            this.txtOkUpper.Size = new System.Drawing.Size(60, 20);
+            this.txtOkUpper.TabIndex = 2;
+            this.txtOkUpper.TextChanged += new System.EventHandler(this.txtOkUpper_TextChanged);
+            // 
+            // txtOkLower
+            // 
+            this.txtOkLower.Location = new System.Drawing.Point(12, 209);
+            this.txtOkLower.Name = "txtOkLower";
+            this.txtOkLower.Size = new System.Drawing.Size(60, 20);
+            this.txtOkLower.TabIndex = 1;
+            this.txtOkLower.TextChanged += new System.EventHandler(this.txtOkLower_TextChanged);
+            // 
+            // lblKRange
+            // 
+            this.lblKRange.AutoSize = true;
+            this.lblKRange.Location = new System.Drawing.Point(9, 193);
+            this.lblKRange.Name = "lblKRange";
+            this.lblKRange.Size = new System.Drawing.Size(71, 13);
+            this.lblKRange.TabIndex = 11;
+            this.lblKRange.Text = "K Range L/U";
             // 
             // ptr_template
             // 
@@ -233,83 +301,15 @@
             this.ptr_template.TabIndex = 10;
             this.ptr_template.TabStop = false;
             // 
-            // lblKRange
+            // btnUpdateTemplate
             // 
-            this.lblKRange.AutoSize = true;
-            this.lblKRange.Location = new System.Drawing.Point(9, 193);
-            this.lblKRange.Name = "lblKRange";
-            this.lblKRange.Size = new System.Drawing.Size(59, 13);
-            this.lblKRange.TabIndex = 11;
-            this.lblKRange.Text = "K Range L/U";
-            // 
-            // txtOkLower
-            // 
-            this.txtOkLower.Location = new System.Drawing.Point(12, 209);
-            this.txtOkLower.Name = "txtOkLower";
-            this.txtOkLower.Size = new System.Drawing.Size(60, 20);
-            this.txtOkLower.TabIndex = 1;
-            this.txtOkLower.TextChanged += new System.EventHandler(this.txtOkLower_TextChanged);
-            // 
-            // txtOkUpper
-            // 
-            this.txtOkUpper.Location = new System.Drawing.Point(84, 209);
-            this.txtOkUpper.Name = "txtOkUpper";
-            this.txtOkUpper.Size = new System.Drawing.Size(60, 20);
-            this.txtOkUpper.TabIndex = 2;
-            this.txtOkUpper.TextChanged += new System.EventHandler(this.txtOkUpper_TextChanged);
-            // 
-            // chkReverse
-            // 
-            this.chkReverse.AutoSize = true;
-            this.chkReverse.Location = new System.Drawing.Point(12, 235);
-            this.chkReverse.Name = "chkReverse";
-            this.chkReverse.Size = new System.Drawing.Size(91, 17);
-            this.chkReverse.TabIndex = 3;
-            this.chkReverse.Text = "Reverse Search";
-            this.chkReverse.UseVisualStyleBackColor = true;
-            this.chkReverse.CheckedChanged += new System.EventHandler(this.chkReverse_CheckedChanged);
-            // 
-            // lblScore
-            // 
-            this.lblScore.AutoSize = true;
-            this.lblScore.Location = new System.Drawing.Point(9, 267);
-            this.lblScore.Name = "lblScore";
-            this.lblScore.Size = new System.Drawing.Size(40, 13);
-            this.lblScore.TabIndex = 7;
-            this.lblScore.Text = "Score:";
-            // 
-            // txtLastScore
-            // 
-            this.txtLastScore.Location = new System.Drawing.Point(60, 264);
-            this.txtLastScore.Name = "txtLastScore";
-            this.txtLastScore.ReadOnly = true;
-            this.txtLastScore.Size = new System.Drawing.Size(60, 20);
-            this.txtLastScore.TabIndex = 8;
-            // 
-            // lblCenter
-            // 
-            this.lblCenter.AutoSize = true;
-            this.lblCenter.Location = new System.Drawing.Point(9, 300);
-            this.lblCenter.Name = "lblCenter";
-            this.lblCenter.Size = new System.Drawing.Size(52, 13);
-            this.lblCenter.TabIndex = 9;
-            this.lblCenter.Text = "Center X/Y";
-            // 
-            // txtCenterX
-            // 
-            this.txtCenterX.Location = new System.Drawing.Point(12, 316);
-            this.txtCenterX.Name = "txtCenterX";
-            this.txtCenterX.ReadOnly = true;
-            this.txtCenterX.Size = new System.Drawing.Size(60, 20);
-            this.txtCenterX.TabIndex = 4;
-            // 
-            // txtCenterY
-            // 
-            this.txtCenterY.Location = new System.Drawing.Point(84, 316);
-            this.txtCenterY.Name = "txtCenterY";
-            this.txtCenterY.ReadOnly = true;
-            this.txtCenterY.Size = new System.Drawing.Size(60, 20);
-            this.txtCenterY.TabIndex = 5;
+            this.btnUpdateTemplate.Location = new System.Drawing.Point(12, 337);
+            this.btnUpdateTemplate.Name = "btnUpdateTemplate";
+            this.btnUpdateTemplate.Size = new System.Drawing.Size(168, 23);
+            this.btnUpdateTemplate.TabIndex = 9;
+            this.btnUpdateTemplate.Text = "Update Template";
+            this.btnUpdateTemplate.UseVisualStyleBackColor = true;
+            this.btnUpdateTemplate.Click += new System.EventHandler(this.btnUpdateTemplate_Click);
             // 
             // splitContainer3
             // 
@@ -329,13 +329,13 @@
             // 
             this.splitContainer3.Panel2.Controls.Add(this.panelImage);
             this.splitContainer3.Size = new System.Drawing.Size(244, 722);
-            this.splitContainer3.SplitterDistance = 407;
+            this.splitContainer3.SplitterDistance = 337;
             this.splitContainer3.TabIndex = 0;
             // 
             // btn_delete
             // 
             this.btn_delete.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.btn_delete.Location = new System.Drawing.Point(166, 382);
+            this.btn_delete.Location = new System.Drawing.Point(166, 311);
             this.btn_delete.Name = "btn_delete";
             this.btn_delete.Size = new System.Drawing.Size(75, 23);
             this.btn_delete.TabIndex = 10;
@@ -346,7 +346,7 @@
             // btn_addfov
             // 
             this.btn_addfov.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.btn_addfov.Location = new System.Drawing.Point(3, 382);
+            this.btn_addfov.Location = new System.Drawing.Point(0, 311);
             this.btn_addfov.Name = "btn_addfov";
             this.btn_addfov.Size = new System.Drawing.Size(75, 23);
             this.btn_addfov.TabIndex = 1;
@@ -360,7 +360,7 @@
             this.panelImage.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panelImage.Location = new System.Drawing.Point(0, 0);
             this.panelImage.Name = "panelImage";
-            this.panelImage.Size = new System.Drawing.Size(244, 311);
+            this.panelImage.Size = new System.Drawing.Size(244, 381);
             this.panelImage.TabIndex = 100;
             // 
             // Form1
