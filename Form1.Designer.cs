@@ -55,6 +55,7 @@
             this.splitContainer3 = new System.Windows.Forms.SplitContainer();
             this.btn_delete = new System.Windows.Forms.Button();
             this.btn_addfov = new System.Windows.Forms.Button();
+            this.panelImage = new System.Windows.Forms.Panel();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
@@ -326,7 +327,7 @@
             // 
             // splitContainer3.Panel2
             // 
-             
+            this.splitContainer3.Panel2.Controls.Add(this.panelImage);
             this.splitContainer3.Size = new System.Drawing.Size(244, 722);
             this.splitContainer3.SplitterDistance = 407;
             this.splitContainer3.TabIndex = 0;
@@ -352,6 +353,15 @@
             this.btn_addfov.Text = "FOV";
             this.btn_addfov.UseVisualStyleBackColor = true;
             this.btn_addfov.Click += new System.EventHandler(this.btn_addfov_Click);
+            // 
+            // panelImage
+            // 
+            this.panelImage.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.panelImage.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.panelImage.Location = new System.Drawing.Point(0, 0);
+            this.panelImage.Name = "panelImage";
+            this.panelImage.Size = new System.Drawing.Size(244, 311);
+            this.panelImage.TabIndex = 100;
             // 
             // Form1
             // 
@@ -380,6 +390,7 @@
             this.grpTemplate.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.ptr_template)).EndInit();
             this.splitContainer3.Panel1.ResumeLayout(false);
+            this.splitContainer3.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer3)).EndInit();
             this.splitContainer3.ResumeLayout(false);
             this.ResumeLayout(false);
@@ -415,6 +426,7 @@
         private System.Windows.Forms.Label lblCenter;
         private System.Windows.Forms.TextBox txtCenterX;
         private System.Windows.Forms.TextBox txtCenterY;
+        private System.Windows.Forms.Panel panelImage;
     }
 }
 

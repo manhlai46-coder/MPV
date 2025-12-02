@@ -214,6 +214,7 @@ namespace MPV
                 }
                 selectedRoiIndex = -1;
                 SyncTemplatePanel();
+                panelImage.Controls.Clear();
                 pictureBox1.Invalidate();
             }
             else if (e.Node.Text.StartsWith("ROI "))
@@ -223,6 +224,21 @@ namespace MPV
                 if (selectedFovIndex >= 0 && selectedFovIndex < fovList.Count)
                     roiList = fovList[selectedFovIndex].Rois;
                 SyncTemplatePanel();
+
+                // render ROI property panel into panelImage
+                panelImage.Controls.Clear();
+                if (selectedRoiIndex >= 0 && selectedRoiIndex < roiList.Count)
+                {
+                    var propertyPanel = new RoiPropertyPanel(
+                        fovManager,
+                        fovList,
+                        pictureBox1,
+                        _bitmap,
+                        selectedFovIndex,
+                        selectedRoiIndex,
+                        roiList);
+                    propertyPanel.ShowRoiProperties(panelImage, roiList[selectedRoiIndex]);
+                }
                 pictureBox1.Invalidate();
             }
         }
@@ -593,7 +609,7 @@ namespace MPV
         }
 
         
-        // ---------------- PictureBox Event Handlers (restored) ----------------
+        
         private void pictureBox1_Paint(object sender, PaintEventArgs e)
         {
             if (_bitmap == null) return;
@@ -668,6 +684,6 @@ namespace MPV
             }
             _drawMode = false; _isUpdatingRoi = false; Cursor = Cursors.Default; pictureBox1.Invalidate();
         }
-        // ---------------------------------------------------------------------
+        
     }
 }
