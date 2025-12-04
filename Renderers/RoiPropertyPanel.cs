@@ -68,7 +68,6 @@ namespace MPV.Renderers
             chkEnabled.CheckedChanged += (s, e) => { roi.IsEnabled = chkEnabled.Checked; SaveRoi(); };
             AddControlRow(root, CreateLabel("Is Enabled"), chkEnabled);
 
-            // ROI group X/Y on first line, W/H on the next line, default styling
             var roiGroup = new TableLayoutPanel { ColumnCount = 4, RowCount = 2, Dock = DockStyle.Top, AutoSize = true };
             for (int i = 0; i < 4; i++) roiGroup.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
             roiGroup.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -94,7 +93,6 @@ namespace MPV.Renderers
 
             var cboAlg = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList };
             cboAlg.Items.AddRange(new object[] { "Barcode", "HSV", "TemplateMatching" });
-            // map existing Mode values
             string currentMode = roi.Mode;
             if (currentMode == "Template Matching") currentMode = "TemplateMatching";
             cboAlg.SelectedItem = currentMode ?? "Barcode";
@@ -110,14 +108,9 @@ namespace MPV.Renderers
             panelImage.Controls.Add(root);
         }
 
-        // -------------------------------------------------------------------
-        // PANEL RENDERERS
-        // -------------------------------------------------------------------
-
         private void RenderBarcodePanel(Panel panel, RoiRegion roi)
         {
-            panel.Controls.Clear(); // FIX DUPLICATION
-
+            panel.Controls.Clear();
             var t = CreateInnerTable();
             AddReadOnlyRow(t, "X", roi.X.ToString());
             AddReadOnlyRow(t, "Y", roi.Y.ToString());
@@ -131,22 +124,15 @@ namespace MPV.Renderers
             };
             cboAlg.Items.AddRange(Enum.GetValues(typeof(BarcodeAlgorithm)).Cast<object>().ToArray());
             cboAlg.SelectedItem = roi.Algorithm ?? BarcodeAlgorithm.QRCode;
-
             cboAlg.SelectedIndexChanged += (s, e) =>
             {
                 roi.Algorithm = (BarcodeAlgorithm)cboAlg.SelectedItem;
                 SaveRoi();
                 pictureBox.Invalidate();
             };
-
             AddControlRow(t, CreateLabel("Format:"), cboAlg);
 
-            var txtLength = new TextBox
-            {
-                Dock = DockStyle.Fill,
-                Text = roi.ExpectedLength > 0 ? roi.ExpectedLength.ToString() : ""
-            };
-
+            var txtLength = new TextBox { Dock = DockStyle.Fill, Text = roi.ExpectedLength > 0 ? roi.ExpectedLength.ToString() : "" };
             txtLength.TextChanged += (s, e) =>
             {
                 if (int.TryParse(txtLength.Text, out int length))
@@ -163,20 +149,16 @@ namespace MPV.Renderers
 
         private void RenderHsvPanel(Panel panel, RoiRegion roi)
         {
-            panel.Controls.Clear(); // FIX DUPLICATION
-
+            panel.Controls.Clear();
             var t = CreateInnerTable();
             AddReadOnlyRow(t, "X", roi.X.ToString());
             AddReadOnlyRow(t, "Y", roi.Y.ToString());
             AddReadOnlyRow(t, "Width", roi.Width.ToString());
             AddReadOnlyRow(t, "Height", roi.Height.ToString());
-
             AutoComputeHSVIfNeeded(roi);
-
             AddReadOnlyRow(t, "H", $"{roi.Lower.H} - {roi.Upper.H}");
             AddReadOnlyRow(t, "S", $"{roi.Lower.S} - {roi.Upper.S}");
             AddReadOnlyRow(t, "V", $"{roi.Lower.V} - {roi.Upper.V}");
-
             var btn = new Button { Text = "Get HSV", Height = 30, Dock = DockStyle.Top };
             btn.Click += (s, e) =>
             {
@@ -186,112 +168,81 @@ namespace MPV.Renderers
             };
             t.Controls.Add(btn);
             t.SetColumnSpan(btn, 2);
-
             AddHiddenCheckbox(t, roi);
             panel.Controls.Add(t);
         }
 
         private void RenderTemplatePanel(Panel panel, RoiRegion roi)
         {
-            panel.Controls.Clear(); // FIX DUPLICATION
-
+            panel.Controls.Clear();
             var t = CreateInnerTable();
             AddReadOnlyRow(t, "X", roi.X.ToString());
             AddReadOnlyRow(t, "Y", roi.Y.ToString());
             AddReadOnlyRow(t, "Width", roi.Width.ToString());
             AddReadOnlyRow(t, "Height", roi.Height.ToString());
-
-            var btn = new Button
-            {
-                Text = "Get Template",
-                Height = 30,
-                Dock = DockStyle.Top
-            };
-
-            btn.Click += (s, e) =>
-            {
-                GetTemplateFromRoi(roi);
-                RenderTemplatePanel(panel, roi);
-            };
-
+            var btn = new Button { Text = "Get Template", Height = 30, Dock = DockStyle.Top };
+            btn.Click += (s, e) => { GetTemplateFromRoi(roi); RenderTemplatePanel(panel, roi); };
             t.Controls.Add(btn);
             t.SetColumnSpan(btn, 2);
-
             if (roi.Template != null)
             {
                 AddReadOnlyRow(t, "Template Size", $"{roi.Template.Width} x {roi.Template.Height}");
                 AddReadOnlyRow(t, "Match Score", roi.MatchScore.ToString("F3"));
             }
-
             AddHiddenCheckbox(t, roi);
             panel.Controls.Add(t);
         }
 
-        // -------------------------------------------------------------------
-        // TEMPLATE EXTRACTION
-        // -------------------------------------------------------------------
-
         private void GetTemplateFromRoi(RoiRegion roi)
         {
             if (currentFovBitmap == null) return;
-
             Rectangle rect = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
             rect.Intersect(new Rectangle(0, 0, currentFovBitmap.Width, currentFovBitmap.Height));
             if (rect.Width <= 0 || rect.Height <= 0) return;
-
             roi.Template?.Dispose();
             roi.Template = null;
-
             Bitmap bmp = new Bitmap(rect.Width, rect.Height);
             using (Graphics g = Graphics.FromImage(bmp))
             {
                 g.DrawImage(currentFovBitmap, new Rectangle(0, 0, rect.Width, rect.Height), rect, GraphicsUnit.Pixel);
             }
-
             roi.Template = bmp;
+            roi.TemplateBase64 = ImageToBase64(bmp);
             roi.MatchScore = 0;
             roi.MatchRect = Rectangle.Empty;
-
             SaveRoi();
         }
 
-        // -------------------------------------------------------------------
-        // HSV AUTO COMPUTE
-        // -------------------------------------------------------------------
+        private string ImageToBase64(Bitmap bmp)
+        {
+            using (var ms = new MemoryStream())
+            {
+                bmp.Save(ms, ImageFormat.Png);
+                return Convert.ToBase64String(ms.ToArray());
+            }
+        }
 
         private void AutoComputeHSVIfNeeded(RoiRegion roi, bool force = false)
         {
-            if (!force && roi.Lower != null && roi.Upper != null)
-                return;
-
+            if (!force && roi.Lower != null && roi.Upper != null) return;
             if (currentFovBitmap == null) return;
-
             Rectangle rect = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
             rect.Intersect(new Rectangle(0, 0, currentFovBitmap.Width, currentFovBitmap.Height));
             if (rect.Width <= 0 || rect.Height <= 0) return;
-
             var bmp = new Bitmap(rect.Width, rect.Height);
             using (Graphics g = Graphics.FromImage(bmp))
                 g.DrawImage(currentFovBitmap, new Rectangle(0, 0, rect.Width, rect.Height), rect, GraphicsUnit.Pixel);
-
             var (lower, upper, _) = hsvAutoService.Compute(bmp, 15, 10);
-
             roi.Lower = lower;
             roi.Upper = upper;
             SaveRoi();
         }
 
-        // -------------------------------------------------------------------
-        // MATCHING
-        // -------------------------------------------------------------------
-
         public void RunTemplateMatching(RoiRegion roi)
         {
             if (roi == null || roi.Template == null || currentFovBitmap == null) return;
-
-             Mat img = BitmapConverter.ToMat(currentFovBitmap);
-             Mat templ = BitmapConverter.ToMat(roi.Template);
-
+            Mat img = BitmapConverter.ToMat(currentFovBitmap);
+            Mat templ = BitmapConverter.ToMat(roi.Template);
             if (img.Width < templ.Width || img.Height < templ.Height)
             {
                 roi.MatchScore = 0;
@@ -299,25 +250,17 @@ namespace MPV.Renderers
                 SaveRoi();
                 return;
             }
-
-             Mat result = new Mat(img.Rows - templ.Rows + 1, img.Cols - templ.Cols + 1, MatType.CV_32FC1);
+            Mat result = new Mat(img.Rows - templ.Rows + 1, img.Cols - templ.Cols + 1, MatType.CV_32FC1);
             Cv2.MatchTemplate(img, templ, result, TemplateMatchModes.CCoeffNormed);
-
             result.MinMaxLoc(out double _, out double maxVal, out _, out OpenCvSharp.Point maxLoc);
-
             roi.MatchScore = maxVal;
             roi.MatchRect = new Rectangle(maxLoc.X, maxLoc.Y, templ.Width, templ.Height);
             SaveRoi();
         }
 
-        // -------------------------------------------------------------------
-        // HELPERS
-        // -------------------------------------------------------------------
-
         private void SaveRoi()
         {
-            if (selectedRoiIndex >= 0 && selectedRoiIndex < roiList.Count &&
-                selectedFovIndex >= 0 && selectedFovIndex < fovList.Count)
+            if (selectedRoiIndex >= 0 && selectedRoiIndex < roiList.Count && selectedFovIndex >= 0 && selectedFovIndex < fovList.Count)
             {
                 fovList[selectedFovIndex].Rois = roiList;
                 fovManager.Save(fovList);
@@ -338,8 +281,7 @@ namespace MPV.Renderers
             return t;
         }
 
-        private Label CreateLabel(string text)
-            => new Label { Text = text, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft };
+        private Label CreateLabel(string text) => new Label { Text = text, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft };
 
         private void AddReadOnlyRow(TableLayoutPanel t, string label, string value)
         {
@@ -371,7 +313,6 @@ namespace MPV.Renderers
             AddControlRow(t, CreateLabel("IsHidden:"), chk);
         }
 
-        // Default styles for mini labels and value boxes
         private Label CreateMiniLabel(string text) => new Label { Text = text, AutoSize = true, Padding = new Padding(3, 3, 3, 3) };
         private TextBox CreateValueBox(int v) => new TextBox { Text = v.ToString(), ReadOnly = true, Width = 60 };
     }

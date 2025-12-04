@@ -27,6 +27,8 @@ namespace MPV.Models
         public HsvValue Upper { get; set; }
         [JsonIgnore]
         public Bitmap Template { get; set; }
+        // Persisted template image as base64 string (PNG)
+        public string TemplateBase64 { get; set; }
         public double MatchScore { get; set; } = 0;
         [JsonIgnore]
         public Rectangle MatchRect { get; set; } = Rectangle.Empty;

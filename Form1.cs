@@ -55,10 +55,12 @@ namespace MPV
             contextMenu = new ContextMenuStrip();
             var menuItemDrawRoi = new ToolStripMenuItem("Vẽ ROI",null, menuItemDrawRoi_Click);
             var menuItemResetRoi = new ToolStripMenuItem("Reset ROI",null, menuItemResetRoi_Click);
-        
-      
+            var menuItemCancel = new ToolStripMenuItem("Hủy", null, (s, e) => { _drawMode = false; });
+
+
             contextMenu.Items.Add(menuItemDrawRoi);
             contextMenu.Items.Add(menuItemResetRoi);
+            contextMenu.Items.Add(menuItemCancel);
             pictureBox1.ContextMenuStrip = contextMenu;
 
             
@@ -206,6 +208,18 @@ namespace MPV
                         pictureBox1.Image = _bitmap;
                         pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
                         roiList = fov.Rois;
+                        // Restore Template bitmap from persisted base64 for all ROIs
+                        foreach (var roi in roiList)
+                        {
+                            if (roi.Template == null && !string.IsNullOrEmpty(roi.TemplateBase64))
+                            {
+                                try
+                                {
+                                    roi.Template = Base64ToBitmap(roi.TemplateBase64);
+                                }
+                                catch { }
+                            }
+                        }
                     }
                     else
                     {
@@ -223,6 +237,15 @@ namespace MPV
                 selectedRoiIndex = roiIndex - 1;
                 if (selectedFovIndex >= 0 && selectedFovIndex < fovList.Count)
                     roiList = fovList[selectedFovIndex].Rois;
+                // Restore template for selected ROI if needed
+                if (selectedRoiIndex >= 0 && selectedRoiIndex < roiList.Count)
+                {
+                    var r = roiList[selectedRoiIndex];
+                    if (r.Template == null && !string.IsNullOrEmpty(r.TemplateBase64))
+                    {
+                        try { r.Template = Base64ToBitmap(r.TemplateBase64); } catch { }
+                    }
+                }
                 SyncTemplatePanel();
 
                 // render ROI property panel into panelImage
@@ -271,9 +294,28 @@ namespace MPV
             using (Graphics g = Graphics.FromImage(bmp))
                 g.DrawImage(_bitmap, new Rectangle(0,0,rect.Width,rect.Height), rect, GraphicsUnit.Pixel);
             roi.Template = bmp;
+            // Persist template as base64 so it survives restarts
+            roi.TemplateBase64 = BitmapToBase64Png(bmp);
             roi.MatchScore = 0; roi.LastScore = 0; roi.MatchRect = Rectangle.Empty;
             fovManager.Save(fovList);
             SyncTemplatePanel();
+        }
+
+        private string BitmapToBase64Png(Bitmap bmp)
+        {
+            using (var ms = new MemoryStream())
+            {
+                bmp.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+                return Convert.ToBase64String(ms.ToArray());
+            }
+        }
+        private Bitmap Base64ToBitmap(string base64)
+        {
+            var bytes = Convert.FromBase64String(base64);
+            using (var ms = new MemoryStream(bytes))
+            {
+                return new Bitmap(ms);
+            }
         }
 
         private void txtOkLower_TextChanged(object sender, EventArgs e)
