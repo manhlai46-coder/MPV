@@ -309,6 +309,57 @@ namespace MPV
             return roi.ReverseSearch ? !inRange : inRange;
         }
 
+        // Template Matching helper: crop to ROI, grayscale, CCoeffNormed
+        private int RunTemplateMatching(RoiRegion roi, Bitmap fovBitmap, out Rectangle matchRect, out double matchScore)
+        {
+            matchRect = Rectangle.Empty;
+            matchScore = 0;
+            if (roi == null || roi.Template == null || fovBitmap == null) return 0;
+
+            var searchRect = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
+            var fovRect = new Rectangle(0, 0, fovBitmap.Width, fovBitmap.Height);
+            searchRect.Intersect(fovRect);
+            if (searchRect.Width <= 0 || searchRect.Height <= 0) return 0;
+
+            using (var searchBmp = new Bitmap(searchRect.Width, searchRect.Height))
+            using (var g = Graphics.FromImage(searchBmp))
+            {
+                g.DrawImage(fovBitmap, new Rectangle(0, 0, searchRect.Width, searchRect.Height), searchRect, GraphicsUnit.Pixel);
+
+                using (Mat img = BitmapConverter.ToMat(searchBmp))
+                using (Mat templ = BitmapConverter.ToMat(roi.Template))
+                using (Mat imgGray = new Mat())
+                using (Mat templGray = new Mat())
+                {
+                    if (img.Empty() || templ.Empty()) return 0;
+
+                    if (img.Channels() > 1)
+                        Cv2.CvtColor(img, imgGray, ColorConversionCodes.BGR2GRAY);
+                    else
+                        img.CopyTo(imgGray);
+
+                    if (templ.Channels() > 1)
+                        Cv2.CvtColor(templ, templGray, ColorConversionCodes.BGR2GRAY);
+                    else
+                        templ.CopyTo(templGray);
+
+                    if (imgGray.Width < templGray.Width || imgGray.Height < templGray.Height)
+                        return 0;
+
+                    using (Mat result = new Mat(imgGray.Rows - templGray.Rows + 1, imgGray.Cols - templGray.Cols + 1, MatType.CV_32FC1))
+                    {
+                        Cv2.MatchTemplate(imgGray, templGray, result, TemplateMatchModes.CCoeffNormed);
+                        result.MinMaxLoc(out double _, out double maxVal, out _, out OpenCvSharp.Point maxLoc);
+
+                        matchScore = maxVal;
+                        matchRect = new Rectangle(searchRect.X + maxLoc.X, searchRect.Y + maxLoc.Y, templGray.Width, templGray.Height);
+                        int scoreInt = (int)Math.Round(maxVal * 100.0);
+                        return scoreInt;
+                    }
+                }
+            }
+        }
+
         private void TestSelectedRoi()
         {
             if (selectedFovIndex < 0 || selectedFovIndex >= fovList.Count) { MessageBox.Show("Chưa chọn FOV hợp lệ."); return; }
@@ -330,20 +381,9 @@ namespace MPV
                 g.DrawImage(_bitmap, new Rectangle(0,0,rect.Width,rect.Height), rect, GraphicsUnit.Pixel);
                 if (roi.Mode == "Template Matching" && roi.Template != null)
                 {
-                    using (Mat img = BitmapConverter.ToMat(_bitmap))
-                    using (Mat templ = BitmapConverter.ToMat(roi.Template))
-                    {
-                        if (img.Width >= templ.Width && img.Height >= templ.Height)
-                        {
-                            using (Mat result = new Mat(img.Rows - templ.Rows + 1, img.Cols - templ.Cols + 1, MatType.CV_32FC1))
-                            {
-                                Cv2.MatchTemplate(img, templ, result, TemplateMatchModes.CCoeffNormed);
-                                result.MinMaxLoc(out double _, out double maxVal, out _, out OpenCvSharp.Point maxLoc);
-                                roi.MatchScore = maxVal; roi.MatchRect = new Rectangle(maxLoc.X, maxLoc.Y, templ.Width, templ.Height);
-                                score = (int)Math.Round(maxVal * 100.0);
-                            }
-                        }
-                    }
+                    Rectangle mrect; double mscore;
+                    score = RunTemplateMatching(roi, _bitmap, out mrect, out mscore);
+                    roi.MatchScore = mscore; roi.MatchRect = mrect;
                 }
                 else if (roi.Mode == "HSV")
                 {
@@ -377,7 +417,7 @@ namespace MPV
             return base.ProcessCmdKey(ref msg, keyData);
         }
 
-       
+      
 
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -429,6 +469,17 @@ namespace MPV
                     continue;
                 }
 
+                // Handle Template Matching separately (use full FOV with ROI-limited search)
+                if (string.Equals(roi.Mode, "Template Matching", StringComparison.OrdinalIgnoreCase) && roi.Template != null)
+                {
+                    Rectangle mrect; double mscore;
+                    int tscore = RunTemplateMatching(roi, _bitmap, out mrect, out mscore);
+                    roi.MatchRect = mrect; roi.MatchScore = mscore;
+                    pass = EvaluateScore(roi, tscore);
+                    _lastTestResults[(selectedFovIndex, i)] = pass;
+                    continue;
+                }
+
                 using (var roiBmp = new Bitmap(rect.Width, rect.Height))
                 using (var g = Graphics.FromImage(roiBmp))
                 {
@@ -442,7 +493,8 @@ namespace MPV
                         var upperRange = new HsvRange(upper.H, upper.H, upper.S, upper.S, upper.V, upper.V);
                         double matchPct;
                         hsvService.DetectColor(roiBmp, lowerRange, upperRange, out matchPct);
-                        pass = (int)Math.Round(matchPct) >= Math.Max(0, Math.Min(100, roi.OkScore));
+                        int sc = (int)Math.Round(matchPct);
+                        pass = EvaluateScore(roi, sc);
                     }
                     else
                     {
@@ -456,8 +508,8 @@ namespace MPV
                         }
 
                         bool ok = !string.IsNullOrWhiteSpace(decoded) && passLength;
-                        int score = ok ? 100 : 0;
-                        pass = score >= Math.Max(0, Math.Min(100, roi.OkScore));
+                        int sc = ok ? 100 : 0;
+                        pass = EvaluateScore(roi, sc);
                     }
                 }
 
