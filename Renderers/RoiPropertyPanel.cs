@@ -1,5 +1,4 @@
-﻿// FIXED VERSION — RoiPropertyPanel (NO DUPLICATION, NO LOOP)
-using System;
+﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
 using MPV.Models;
@@ -108,44 +107,7 @@ namespace MPV.Renderers
             panelImage.Controls.Add(root);
         }
 
-        private void RenderBarcodePanel(Panel panel, RoiRegion roi)
-        {
-            panel.Controls.Clear();
-            var t = CreateInnerTable();
-            AddReadOnlyRow(t, "X", roi.X.ToString());
-            AddReadOnlyRow(t, "Y", roi.Y.ToString());
-            AddReadOnlyRow(t, "Width", roi.Width.ToString());
-            AddReadOnlyRow(t, "Height", roi.Height.ToString());
-
-            var cboAlg = new ComboBox
-            {
-                Dock = DockStyle.Fill,
-                DropDownStyle = ComboBoxStyle.DropDownList
-            };
-            cboAlg.Items.AddRange(Enum.GetValues(typeof(BarcodeAlgorithm)).Cast<object>().ToArray());
-            cboAlg.SelectedItem = roi.Algorithm ?? BarcodeAlgorithm.QRCode;
-            cboAlg.SelectedIndexChanged += (s, e) =>
-            {
-                roi.Algorithm = (BarcodeAlgorithm)cboAlg.SelectedItem;
-                SaveRoi();
-                pictureBox.Invalidate();
-            };
-            AddControlRow(t, CreateLabel("Format:"), cboAlg);
-
-            var txtLength = new TextBox { Dock = DockStyle.Fill, Text = roi.ExpectedLength > 0 ? roi.ExpectedLength.ToString() : "" };
-            txtLength.TextChanged += (s, e) =>
-            {
-                if (int.TryParse(txtLength.Text, out int length))
-                {
-                    roi.ExpectedLength = length;
-                    SaveRoi();
-                }
-            };
-            AddControlRow(t, CreateLabel("Length:"), txtLength);
-
-            AddHiddenCheckbox(t, roi);
-            panel.Controls.Add(t);
-        }
+        
 
         private void RenderHsvPanel(Panel panel, RoiRegion roi)
         {
