@@ -46,31 +46,35 @@ namespace MPV.Renderers
                     (int)(roi.Height * scaleY)
                 );
 
-                
+                // Shrink rectangle a bit to make the ROI frame appear smaller
+                // Avoid negative sizes
+                if (displayRect.Width > 4 && displayRect.Height > 4)
+                {
+                    displayRect.Inflate(-2, -2);
+                }
+
                 Color baseColor;
                 if (roi.Mode == "HSV")
                 {
-   
                     baseColor = (roi.Lower != null && roi.Upper != null) ? Color.LimeGreen : Color.Red;
                 }
                 else 
                 {
-   
                     baseColor = Color.Red;
                 }
 
                 if (i == selectedIndex)
                     baseColor = Color.Orange;
 
-                using (Pen pen = new Pen(baseColor, (i == selectedIndex) ? 3 : 2))
+                using (Pen pen = new Pen(baseColor, (i == selectedIndex) ? 2 : 1))
                 {
                     g.DrawRectangle(pen, displayRect);
                 }
 
-                using (Font font = new Font("Arial", 9, FontStyle.Bold))
+                using (Font font = new Font("Arial", 8, FontStyle.Bold))
                 using (SolidBrush brush = new SolidBrush(baseColor))
                 {
-                    g.DrawString($" {i + 1}", font, brush, displayRect.X, displayRect.Y - 18);
+                    g.DrawString($" {i + 1}", font, brush, displayRect.X, displayRect.Y - 16);
                 }
             }
         }
