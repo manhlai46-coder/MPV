@@ -36,6 +36,10 @@ namespace MPV
         private bool _singleRoiMode = false;     
         private bool _showRunResults = false;
         private int _roiToUpdateIndex = -1;
+        private float _zoomFactor = 1.0f;
+        private const float _zoomStep = 0.1f;
+        private const float _minZoom = 0.5f;
+        private const float _maxZoom = 5.0f;
 
        //AppDomain.CurrentDomain
         public Form1()
@@ -47,6 +51,7 @@ namespace MPV
             barcodeService = new BarcodeService();
             hsvService = new HsvService();
             roiRenderer = new RoiRenderer(pictureBox1);
+            pictureBox1.MouseWheel += pictureBox1_MouseWheel;
         }
 
         
@@ -56,10 +61,18 @@ namespace MPV
             var menuItemDrawRoi = new ToolStripMenuItem("Vẽ ROI",null, menuItemDrawRoi_Click);
             var menuItemResetRoi = new ToolStripMenuItem("Reset ROI",null, menuItemResetRoi_Click);
             var menuItemCancel = new ToolStripMenuItem("Hủy", null, (s, e) => { _drawMode = false; });
+            var menuItemZoomIn = new ToolStripMenuItem("Phóng to (+)", null, (s, e) => ZoomIn());
+            var menuItemZoomOut = new ToolStripMenuItem("Thu nhỏ (-)", null, (s, e) => ZoomOut());
+            var menuItemZoomReset = new ToolStripMenuItem("Zoom gốc (100%)", null, (s, e) => ResetZoom());
 
 
             contextMenu.Items.Add(menuItemDrawRoi);
             contextMenu.Items.Add(menuItemResetRoi);
+            contextMenu.Items.Add(new ToolStripSeparator());
+            contextMenu.Items.Add(menuItemZoomIn);
+            contextMenu.Items.Add(menuItemZoomOut);
+            contextMenu.Items.Add(menuItemZoomReset);
+            contextMenu.Items.Add(new ToolStripSeparator());
             contextMenu.Items.Add(menuItemCancel);
             pictureBox1.ContextMenuStrip = contextMenu;
 
@@ -79,7 +92,6 @@ namespace MPV
                 }
             }
         }
-
 
         private void menuItemResetRoi_Click(object sender, EventArgs e)
         {
@@ -223,7 +235,7 @@ namespace MPV
                     {
                         _bitmap = new Bitmap(fov.ImagePath);
                         pictureBox1.Image = _bitmap;
-                        pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+                        ResetZoom();
                         roiList = fov.Rois;
                         // Restore Template bitmap from persisted base64 for all ROIs
                         foreach (var roi in roiList)
@@ -237,6 +249,13 @@ namespace MPV
                                 catch { }
                             }
                         }
+                        // Ensure FOV image is also persisted as base64
+                        try
+                        {
+                            fov.ImageBase64 = BitmapToBase64Png(_bitmap);
+                            fovManager.Save(fovList);
+                        }
+                        catch { }
                     }
                     else if (!string.IsNullOrEmpty(fov.ImageBase64))
                     {
@@ -244,7 +263,7 @@ namespace MPV
                         {
                             _bitmap = Base64ToBitmap(fov.ImageBase64);
                             pictureBox1.Image = _bitmap;
-                            pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+                            ResetZoom();
                             roiList = fov.Rois;
                         }
                         catch
@@ -443,6 +462,8 @@ namespace MPV
                 if (File.Exists(fov.ImagePath))
                 {
                     _bitmap = new Bitmap(fov.ImagePath);
+                    // Also persist to base64 when reading from file
+                    try { fov.ImageBase64 = BitmapToBase64Png(_bitmap); fovManager.Save(fovList); } catch { }
                 }
                 else if (!string.IsNullOrEmpty(fov.ImageBase64))
                 {
@@ -507,6 +528,22 @@ namespace MPV
                 TestSelectedRoi();
                 return true; // handled
             }
+            // Add zoom shortcuts
+            if (keyData == (Keys.Control | Keys.Add) || keyData == (Keys.Control | Keys.Oemplus))
+            {
+                ZoomIn();
+                return true;
+            }
+            if (keyData == (Keys.Control | Keys.Subtract) || keyData == (Keys.Control | Keys.OemMinus))
+            {
+                ZoomOut();
+                return true;
+            }
+            if (keyData == (Keys.Control | Keys.D0))
+            {
+                ResetZoom();
+                return true;
+            }
             return base.ProcessCmdKey(ref msg, keyData);
         }
 
@@ -539,6 +576,8 @@ namespace MPV
             if (File.Exists(fov.ImagePath))
             {
                 _bitmap = new Bitmap(fov.ImagePath);
+                // Persist FOV image to base64 when loading from file
+                try { fov.ImageBase64 = BitmapToBase64Png(_bitmap); fovManager.Save(fovList); } catch { }
             }
             else if (!string.IsNullOrEmpty(fov.ImageBase64))
             {
@@ -859,6 +898,62 @@ namespace MPV
                 roiList = fovList[selectedFovIndex].Rois;
             }
             _drawMode = false; _isUpdatingRoi = false; Cursor = Cursors.Default; pictureBox1.Invalidate();
+        }
+
+        private void pictureBox1_MouseWheel(object sender, MouseEventArgs e)
+        {
+            if (_bitmap == null) return;
+
+            if (e.Delta > 0)
+            {
+                ZoomIn();
+            }
+            else if (e.Delta < 0)
+            {
+                ZoomOut();
+            }
+        }
+
+        private void ZoomIn()
+        {
+            if (_bitmap == null) return;
+            
+            _zoomFactor = Math.Min(_zoomFactor + _zoomStep, _maxZoom);
+            ApplyZoom();
+        }
+
+        private void ZoomOut()
+        {
+            if (_bitmap == null) return;
+            
+            _zoomFactor = Math.Max(_zoomFactor - _zoomStep, _minZoom);
+            ApplyZoom();
+        }
+
+        private void ResetZoom()
+        {
+            if (_bitmap == null) return;
+            
+            _zoomFactor = 1.0f;
+            pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+            pictureBox1.Dock = DockStyle.Fill;
+            pictureBox1.Invalidate();
+        }
+
+        private void ApplyZoom()
+        {
+            if (_bitmap == null) return;
+
+            pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+            pictureBox1.Dock = DockStyle.None;
+            int newWidth = (int)(pictureBox1.Parent.Width * _zoomFactor);
+            int newHeight = (int)(pictureBox1.Parent.Height * _zoomFactor);
+            
+            pictureBox1.Width = newWidth;
+            pictureBox1.Height = newHeight;
+            pictureBox1.Left = (pictureBox1.Parent.Width - newWidth) / 2;
+            pictureBox1.Top = (pictureBox1.Parent.Height - newHeight) / 2;
+            pictureBox1.Invalidate();
         }
         
     }
