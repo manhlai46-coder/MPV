@@ -440,8 +440,21 @@ namespace MPV
             if (_bitmap == null)
             {
                 var fov = fovList[selectedFovIndex];
-                if (!File.Exists(fov.ImagePath)) { MessageBox.Show("Không tìm thấy ảnh FOV."); return; }
-                _bitmap = new Bitmap(fov.ImagePath); pictureBox1.Image = _bitmap; pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+                if (File.Exists(fov.ImagePath))
+                {
+                    _bitmap = new Bitmap(fov.ImagePath);
+                }
+                else if (!string.IsNullOrEmpty(fov.ImageBase64))
+                {
+                    try { _bitmap = Base64ToBitmap(fov.ImageBase64); }
+                    catch { MessageBox.Show("Không thể đọc ảnh FOV từ base64."); return; }
+                }
+                else
+                {
+                    MessageBox.Show("Không tìm thấy ảnh FOV.");
+                    return;
+                }
+                pictureBox1.Image = _bitmap; pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
             }
             var roi = roiList[selectedRoiIndex];
             Rectangle rect = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
@@ -521,14 +534,23 @@ namespace MPV
                 MessageBox.Show("Hãy chọn FOV trước.");
                 return;
             }
-            if (!File.Exists(fovList[selectedFovIndex].ImagePath))
+
+            var fov = fovList[selectedFovIndex];
+            if (File.Exists(fov.ImagePath))
+            {
+                _bitmap = new Bitmap(fov.ImagePath);
+            }
+            else if (!string.IsNullOrEmpty(fov.ImageBase64))
+            {
+                try { _bitmap = Base64ToBitmap(fov.ImageBase64); }
+                catch { MessageBox.Show("Không thể đọc ảnh FOV từ base64."); return; }
+            }
+            else
             {
                 MessageBox.Show("Không tìm thấy ảnh FOV.");
                 return;
             }
 
-            var fov = fovList[selectedFovIndex];
-            _bitmap = new Bitmap(fov.ImagePath);
             pictureBox1.Image = _bitmap;
             pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
             roiList = fov.Rois;
