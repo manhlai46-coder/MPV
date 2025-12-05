@@ -150,6 +150,10 @@ namespace MPV
 
         private void LoadFovToTreeView()
         {
+            // Preserve current selection indices
+            int prevFov = selectedFovIndex;
+            int prevRoi = selectedRoiIndex;
+
             pn_property.Nodes.Clear();
             fovList = fovManager.Load();
 
@@ -187,6 +191,19 @@ namespace MPV
 
             pn_property.Nodes.Add(root);
             root.Expand();
+
+            // Restore previous selection if possible
+            if (prevFov >= 0 && prevFov < root.Nodes.Count)
+            {
+                var fovNode = root.Nodes[prevFov];
+                TreeNode nodeToSelect = fovNode;
+                if (prevRoi >= 0 && prevRoi < fovNode.Nodes.Count)
+                {
+                    nodeToSelect = fovNode.Nodes[prevRoi];
+                }
+                pn_property.SelectedNode = nodeToSelect;
+                nodeToSelect.EnsureVisible();
+            }
         }
 
         private void trv1_AfterSelect(object sender, TreeViewEventArgs e)
@@ -219,6 +236,20 @@ namespace MPV
                                 }
                                 catch { }
                             }
+                        }
+                    }
+                    else if (!string.IsNullOrEmpty(fov.ImageBase64))
+                    {
+                        try
+                        {
+                            _bitmap = Base64ToBitmap(fov.ImageBase64);
+                            pictureBox1.Image = _bitmap;
+                            pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+                            roiList = fov.Rois;
+                        }
+                        catch
+                        {
+                            pictureBox1.Image = null; _bitmap = null; roiList = new List<RoiRegion>();
                         }
                     }
                     else
@@ -429,11 +460,18 @@ namespace MPV
                 }
                 else if (roi.Mode == "HSV")
                 {
-                    var (lower, upper, _) = hsvAutoService.Compute(roiBmp, 15, 10);
-                    if (roi.Lower == null || roi.Upper == null) { roi.Lower = lower; roi.Upper = upper; }
-                    var lowerRange = new HsvRange(lower.H, lower.H, lower.S, lower.S, lower.V, lower.V);
-                    var upperRange = new HsvRange(upper.H, upper.H, upper.S, upper.S, upper.V, upper.V);
-                    double matchPct; hsvService.DetectColor(roiBmp, lowerRange, upperRange, out matchPct);
+                    // Use existing configured HSV ranges if available; otherwise compute once
+                    if (roi.Lower == null || roi.Upper == null)
+                    {
+                        var (lowerAuto, upperAuto, _) = hsvAutoService.Compute(roiBmp, 15, 10);
+                        roi.Lower = lowerAuto;
+                        roi.Upper = upperAuto;
+                    }
+
+                    var lowerRange = new HsvRange(roi.Lower.H, roi.Lower.H, roi.Lower.S, roi.Lower.S, roi.Lower.V, roi.Lower.V);
+                    var upperRange = new HsvRange(roi.Upper.H, roi.Upper.H, roi.Upper.S, roi.Upper.S, roi.Upper.V, roi.Upper.V);
+                    double matchPct;
+                    hsvService.DetectColor(roiBmp, lowerRange, upperRange, out matchPct);
                     score = (int)Math.Round(matchPct);
                 }
                 else
@@ -528,11 +566,15 @@ namespace MPV
                     g.DrawImage(_bitmap, new Rectangle(0, 0, rect.Width, rect.Height), rect, GraphicsUnit.Pixel);
                     if (string.Equals(roi.Mode, "HSV", StringComparison.OrdinalIgnoreCase))
                     {
-                        var (lower, upper, stats) = hsvAutoService.Compute(roiBmp, 15, 10);
-                        roi.Lower = lower;
-                        roi.Upper = upper;
-                        var lowerRange = new HsvRange(lower.H, lower.H, lower.S, lower.S, lower.V, lower.V);
-                        var upperRange = new HsvRange(upper.H, upper.H, upper.S, upper.S, upper.V, upper.V);
+                        // Respect configured HSV ranges; compute only if missing
+                        if (roi.Lower == null || roi.Upper == null)
+                        {
+                            var (lowerAuto, upperAuto, stats) = hsvAutoService.Compute(roiBmp, 15, 10);
+                            roi.Lower = lowerAuto;
+                            roi.Upper = upperAuto;
+                        }
+                        var lowerRange = new HsvRange(roi.Lower.H, roi.Lower.H, roi.Lower.S, roi.Lower.S, roi.Lower.V, roi.Lower.V);
+                        var upperRange = new HsvRange(roi.Upper.H, roi.Upper.H, roi.Upper.S, roi.Upper.S, roi.Upper.V, roi.Upper.V);
                         double matchPct;
                         hsvService.DetectColor(roiBmp, lowerRange, upperRange, out matchPct);
                         int sc = (int)Math.Round(matchPct);
@@ -578,6 +620,14 @@ namespace MPV
                         Rois = new List<RoiRegion>()
                     };
 
+                    // Also store base64 so image is available across machines
+                    try
+                    {
+                        var bytes = File.ReadAllBytes(ofd.FileName);
+                        newFov.ImageBase64 = Convert.ToBase64String(bytes);
+                    }
+                    catch { }
+
                     fovManager.Add(newFov);
                     LoadFovToTreeView();
 
@@ -592,6 +642,18 @@ namespace MPV
                         pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
                         _showRoiOnImage = true;
                         pictureBox1.Invalidate();
+                    }
+                    else if (!string.IsNullOrEmpty(newFov.ImageBase64))
+                    {
+                        try
+                        {
+                            _bitmap = Base64ToBitmap(newFov.ImageBase64);
+                            pictureBox1.Image = _bitmap;
+                            pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+                            _showRoiOnImage = true;
+                            pictureBox1.Invalidate();
+                        }
+                        catch { }
                     }
 
                     //MessageBox.Show("Đã thêm FOV mới với ảnh: " + Path.GetFileName(ofd.FileName));
