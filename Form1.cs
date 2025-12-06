@@ -116,20 +116,26 @@ namespace MPV
             _hsvPanel = new Panel { Width = grpTemplate.Width - 6, Height = 160, Left = 12, Top = 19, Visible = false, BorderStyle = BorderStyle.None };
 
             // layout: three rows of L/U textboxes
-            int labelW = 20; // small fixed labels inside group title, not used here
-            int boxW = (_hsvPanel.Width - 32) / 2; // two columns
+            int labelW = 24;
+            int boxW = (_hsvPanel.Width - 32 - labelW) / 2; // space for label + two columns
             int left = 8;
             int gapY = 28;
             int top = 8;
 
-            _txtHL = new TextBox { Left = left, Top = top, Width = boxW, Text = "" };
-            _txtHU = new TextBox { Left = left + boxW + 16, Top = top, Width = boxW, Text = "" };
+            // row labels
+            var lblH = new Label { Left = left, Top = top + 3, Width = labelW, Text = "H:" };
+            var lblS = new Label { Left = left, Top = top + gapY + 3, Width = labelW, Text = "S:" };
+            var lblV = new Label { Left = left, Top = top + gapY * 2 + 3, Width = labelW, Text = "V:" };
 
-            _txtSL = new TextBox { Left = left, Top = top + gapY, Width = boxW, Text = "" };
-            _txtSU = new TextBox { Left = left + boxW + 16, Top = top + gapY, Width = boxW, Text = "" };
+            // textboxes positioned after labels
+            _txtHL = new TextBox { Left = left + labelW, Top = top, Width = boxW, Text = "" };
+            _txtHU = new TextBox { Left = left + labelW + boxW + 16, Top = top, Width = boxW, Text = "" };
 
-            _txtVL = new TextBox { Left = left, Top = top + gapY * 2, Width = boxW, Text = "" };
-            _txtVU = new TextBox { Left = left + boxW + 16, Top = top + gapY * 2, Width = boxW, Text = "" };
+            _txtSL = new TextBox { Left = left + labelW, Top = top + gapY, Width = boxW, Text = "" };
+            _txtSU = new TextBox { Left = left + labelW + boxW + 16, Top = top + gapY, Width = boxW, Text = "" };
+
+            _txtVL = new TextBox { Left = left + labelW, Top = top + gapY * 2, Width = boxW, Text = "" };
+            _txtVU = new TextBox { Left = left + labelW + boxW + 16, Top = top + gapY * 2, Width = boxW, Text = "" };
 
             // wire events to persist changes
             _txtHL.TextChanged += (s, e) => UpdateHsvFromInputs();
@@ -139,6 +145,10 @@ namespace MPV
             _txtVL.TextChanged += (s, e) => UpdateHsvFromInputs();
             _txtVU.TextChanged += (s, e) => UpdateHsvFromInputs();
 
+            // add controls
+            _hsvPanel.Controls.Add(lblH);
+            _hsvPanel.Controls.Add(lblS);
+            _hsvPanel.Controls.Add(lblV);
             _hsvPanel.Controls.Add(_txtHL);
             _hsvPanel.Controls.Add(_txtHU);
             _hsvPanel.Controls.Add(_txtSL);
