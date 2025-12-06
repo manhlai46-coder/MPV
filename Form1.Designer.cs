@@ -56,6 +56,7 @@
             this.btn_delete = new System.Windows.Forms.Button();
             this.btn_addfov = new System.Windows.Forms.Button();
             this.panelImage = new System.Windows.Forms.Panel();
+            this.panelScroll = new System.Windows.Forms.Panel();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
@@ -78,7 +79,7 @@
             // pictureBox1
             // 
             this.pictureBox1.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
-            this.pictureBox1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pictureBox1.Dock = System.Windows.Forms.DockStyle.None;
             this.pictureBox1.Location = new System.Drawing.Point(0, 0);
             this.pictureBox1.Name = "pictureBox1";
             this.pictureBox1.Size = new System.Drawing.Size(718, 722);
@@ -168,17 +169,20 @@
             // splitContainer2
             // 
             this.splitContainer2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.splitContainer2.IsSplitterFixed = true;
+            this.splitContainer2.IsSplitterFixed = false;
+            this.splitContainer2.FixedPanel = System.Windows.Forms.FixedPanel.Panel1;
+            this.splitContainer2.SplitterWidth = 2;
             this.splitContainer2.Location = new System.Drawing.Point(0, 0);
             this.splitContainer2.Name = "splitContainer2";
             // 
             // splitContainer2.Panel1
             // 
             this.splitContainer2.Panel1.Controls.Add(this.pn_left);
+            this.splitContainer2.Panel1MinSize = 192;
             // 
             // splitContainer2.Panel2
             // 
-            this.splitContainer2.Panel2.Controls.Add(this.pictureBox1);
+            this.splitContainer2.Panel2.Controls.Add(this.panelScroll);
             this.splitContainer2.Size = new System.Drawing.Size(914, 722);
             this.splitContainer2.SplitterDistance = 192;
             this.splitContainer2.TabIndex = 0;
@@ -205,10 +209,9 @@
             this.grpTemplate.Controls.Add(this.lblKRange);
             this.grpTemplate.Controls.Add(this.ptr_template);
             this.grpTemplate.Controls.Add(this.btnUpdateTemplate);
-            this.grpTemplate.Dock = System.Windows.Forms.DockStyle.Top;
             this.grpTemplate.Location = new System.Drawing.Point(0, 0);
             this.grpTemplate.Name = "grpTemplate";
-            this.grpTemplate.Size = new System.Drawing.Size(192, 370);
+            this.grpTemplate.Size = new System.Drawing.Size(197, 406);
             this.grpTemplate.TabIndex = 0;
             this.grpTemplate.TabStop = false;
             this.grpTemplate.Text = "Template";
@@ -363,6 +366,16 @@
             this.panelImage.Size = new System.Drawing.Size(244, 381);
             this.panelImage.TabIndex = 100;
             // 
+            // panelScroll
+            // 
+            this.panelScroll.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.panelScroll.AutoScroll = true;
+            this.panelScroll.Controls.Add(this.pictureBox1);
+            this.panelScroll.Location = new System.Drawing.Point(0, 0);
+            this.panelScroll.Name = "panelScroll";
+            this.panelScroll.Size = new System.Drawing.Size(718, 722);
+            this.panelScroll.TabIndex = 200;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -374,6 +387,7 @@
             this.Name = "Form1";
             this.Text = " ";
             this.Load += new System.EventHandler(this.Form1_Load);
+            this.Shown += new System.EventHandler(this.Form1_Shown);
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
@@ -427,6 +441,7 @@
         private System.Windows.Forms.TextBox txtCenterX;
         private System.Windows.Forms.TextBox txtCenterY;
         private System.Windows.Forms.Panel panelImage;
+        private System.Windows.Forms.Panel panelScroll;
     }
 }
 

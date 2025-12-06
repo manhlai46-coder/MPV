@@ -52,6 +52,50 @@ namespace MPV
             hsvService = new HsvService();
             roiRenderer = new RoiRenderer(pictureBox1);
             pictureBox1.MouseWheel += pictureBox1_MouseWheel;
+
+            // Ensure pictureBox is inside the scrollable panel and visible
+            if (panelScroll != null && pictureBox1.Parent != panelScroll)
+            {
+                try
+                {
+                    panelScroll.Controls.Clear();
+                    panelScroll.Controls.Add(pictureBox1);
+                }
+                catch { }
+            }
+            if (panelScroll != null)
+            {
+                panelScroll.AutoScroll = true;
+                panelScroll.Visible = true;
+                panelScroll.Resize += (s, e) =>
+                {
+                    if (_bitmap != null)
+                    {
+                        // Re-center when viewport changes
+                        ApplyZoom();
+                    }
+                };
+            }
+            pictureBox1.Visible = true;
+        }
+
+        private void Form1_Shown(object sender, EventArgs e)
+        {
+            try
+            {
+                pictureBox1.BringToFront();
+                if (_bitmap != null)
+                {
+                    ResetZoom();
+                }
+                else
+                {
+                    // ensure placeholder size so control is visible even without image
+                    pictureBox1.Width = Math.Max(200, pictureBox1.Width);
+                    pictureBox1.Height = Math.Max(150, pictureBox1.Height);
+                }
+            }
+            catch { }
         }
 
         
@@ -593,6 +637,8 @@ namespace MPV
             pictureBox1.Image = _bitmap;
             pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
             roiList = fov.Rois;
+            // ensure zoom applies to new image
+            ResetZoom();
 
             _lastTestResults.Clear();
 
@@ -702,6 +748,7 @@ namespace MPV
                         pictureBox1.Image = _bitmap;
                         pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
                         _showRoiOnImage = true;
+                        ResetZoom();
                         pictureBox1.Invalidate();
                     }
                     else if (!string.IsNullOrEmpty(newFov.ImageBase64))
@@ -712,6 +759,7 @@ namespace MPV
                             pictureBox1.Image = _bitmap;
                             pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
                             _showRoiOnImage = true;
+                            ResetZoom();
                             pictureBox1.Invalidate();
                         }
                         catch { }
@@ -744,6 +792,7 @@ namespace MPV
                         _bitmap = new Bitmap(fovList[selectedFovIndex].ImagePath);
                         pictureBox1.Image = _bitmap;
                         _showRoiOnImage = true;
+                        ResetZoom();
                         pictureBox1.Invalidate();
                     }
 
@@ -769,18 +818,19 @@ namespace MPV
                             pictureBox1.Image = _bitmap;
                             roiList = fovList[0].Rois;
                             _showRoiOnImage = true;
+                            ResetZoom();
                         }
-                    }
-                    else
-                    {
-                        selectedFovIndex = -1;
-                        selectedRoiIndex = -1;
-                        pictureBox1.Image = null;
-                        _bitmap = null;
-                        roiList.Clear();
-                    }
+                        else
+                        {
+                            selectedFovIndex = -1;
+                            selectedRoiIndex = -1;
+                            pictureBox1.Image = null;
+                            _bitmap = null;
+                            roiList.Clear();
+                        }
 
-                    pictureBox1.Invalidate();
+                        pictureBox1.Invalidate();
+                    }
                 }
             }
         }
@@ -917,7 +967,6 @@ namespace MPV
         private void ZoomIn()
         {
             if (_bitmap == null) return;
-            
             _zoomFactor = Math.Min(_zoomFactor + _zoomStep, _maxZoom);
             ApplyZoom();
         }
@@ -925,7 +974,6 @@ namespace MPV
         private void ZoomOut()
         {
             if (_bitmap == null) return;
-            
             _zoomFactor = Math.Max(_zoomFactor - _zoomStep, _minZoom);
             ApplyZoom();
         }
@@ -933,10 +981,25 @@ namespace MPV
         private void ResetZoom()
         {
             if (_bitmap == null) return;
-            
+
             _zoomFactor = 1.0f;
             pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
-            pictureBox1.Dock = DockStyle.Fill;
+            // place image in scroll panel at natural size
+            pictureBox1.Dock = DockStyle.None;
+            pictureBox1.Width = _bitmap.Width;
+            pictureBox1.Height = _bitmap.Height;
+            pictureBox1.Left = 0;
+            pictureBox1.Top = 0;
+            // center if smaller than viewport
+            if (panelScroll != null)
+            {
+                int vw = panelScroll.ClientSize.Width;
+                int vh = panelScroll.ClientSize.Height;
+                if (pictureBox1.Width < vw)
+                    pictureBox1.Left = (vw - pictureBox1.Width) / 2;
+                if (pictureBox1.Height < vh)
+                    pictureBox1.Top = (vh - pictureBox1.Height) / 2;
+            }
             pictureBox1.Invalidate();
         }
 
@@ -946,13 +1009,27 @@ namespace MPV
 
             pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
             pictureBox1.Dock = DockStyle.None;
-            int newWidth = (int)(pictureBox1.Parent.Width * _zoomFactor);
-            int newHeight = (int)(pictureBox1.Parent.Height * _zoomFactor);
-            
-            pictureBox1.Width = newWidth;
-            pictureBox1.Height = newHeight;
-            pictureBox1.Left = (pictureBox1.Parent.Width - newWidth) / 2;
-            pictureBox1.Top = (pictureBox1.Parent.Height - newHeight) / 2;
+            // compute new size based on bitmap and zoom factor
+            int newWidth = (int)(_bitmap.Width * _zoomFactor);
+            int newHeight = (int)(_bitmap.Height * _zoomFactor);
+            pictureBox1.Width = Math.Max(1, newWidth);
+            pictureBox1.Height = Math.Max(1, newHeight);
+
+            // keep top-left at 0,0 so scrollbars appear when larger than viewport
+            pictureBox1.Left = 0;
+            pictureBox1.Top = 0;
+
+            // center only if smaller than viewport (no scrollbars)
+            if (panelScroll != null)
+            {
+                int vw = panelScroll.ClientSize.Width;
+                int vh = panelScroll.ClientSize.Height;
+                if (pictureBox1.Width < vw)
+                    pictureBox1.Left = (vw - pictureBox1.Width) / 2;
+                if (pictureBox1.Height < vh)
+                    pictureBox1.Top = (vh - pictureBox1.Height) / 2;
+            }
+
             pictureBox1.Invalidate();
         }
         
