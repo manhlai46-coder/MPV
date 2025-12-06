@@ -41,7 +41,17 @@ namespace MPV
         private const float _minZoom = 0.5f;
         private const float _maxZoom = 5.0f;
 
-       //AppDomain.CurrentDomain
+        // panel for HSV values on the left
+        private Panel _hsvPanel;
+        // replace labels with textboxes for lower/upper ranges
+        private TextBox _txtHL; // H lower
+        private TextBox _txtHU; // H upper
+        private TextBox _txtSL; // S lower
+        private TextBox _txtSU; // S upper
+        private TextBox _txtVL; // V lower
+        private TextBox _txtVU; // V upper
+
+        //AppDomain.CurrentDomain
         public Form1()
         {
             InitializeComponent();
@@ -77,6 +87,9 @@ namespace MPV
                 };
             }
             pictureBox1.Visible = true;
+
+            // init HSV panel (hidden by default)
+            InitHsvPanel();
         }
 
         private void Form1_Shown(object sender, EventArgs e)
@@ -98,7 +111,96 @@ namespace MPV
             catch { }
         }
 
-        
+        private void InitHsvPanel()
+        {
+            _hsvPanel = new Panel { Width = grpTemplate.Width - 6, Height = 160, Left = 12, Top = 19, Visible = false, BorderStyle = BorderStyle.None };
+
+            // layout: three rows of L/U textboxes
+            int labelW = 20; // small fixed labels inside group title, not used here
+            int boxW = (_hsvPanel.Width - 32) / 2; // two columns
+            int left = 8;
+            int gapY = 28;
+            int top = 8;
+
+            _txtHL = new TextBox { Left = left, Top = top, Width = boxW, Text = "" };
+            _txtHU = new TextBox { Left = left + boxW + 16, Top = top, Width = boxW, Text = "" };
+
+            _txtSL = new TextBox { Left = left, Top = top + gapY, Width = boxW, Text = "" };
+            _txtSU = new TextBox { Left = left + boxW + 16, Top = top + gapY, Width = boxW, Text = "" };
+
+            _txtVL = new TextBox { Left = left, Top = top + gapY * 2, Width = boxW, Text = "" };
+            _txtVU = new TextBox { Left = left + boxW + 16, Top = top + gapY * 2, Width = boxW, Text = "" };
+
+            // wire events to persist changes
+            _txtHL.TextChanged += (s, e) => UpdateHsvFromInputs();
+            _txtHU.TextChanged += (s, e) => UpdateHsvFromInputs();
+            _txtSL.TextChanged += (s, e) => UpdateHsvFromInputs();
+            _txtSU.TextChanged += (s, e) => UpdateHsvFromInputs();
+            _txtVL.TextChanged += (s, e) => UpdateHsvFromInputs();
+            _txtVU.TextChanged += (s, e) => UpdateHsvFromInputs();
+
+            _hsvPanel.Controls.Add(_txtHL);
+            _hsvPanel.Controls.Add(_txtHU);
+            _hsvPanel.Controls.Add(_txtSL);
+            _hsvPanel.Controls.Add(_txtSU);
+            _hsvPanel.Controls.Add(_txtVL);
+            _hsvPanel.Controls.Add(_txtVU);
+
+            grpTemplate.Controls.Add(_hsvPanel);
+        }
+
+        private void UpdateHsvPanelValues(RoiRegion roi)
+        {
+            if (roi == null)
+            {
+                if (_txtHL != null) { _txtHL.Text = ""; }
+                if (_txtHU != null) { _txtHU.Text = ""; }
+                if (_txtSL != null) { _txtSL.Text = ""; }
+                if (_txtSU != null) { _txtSU.Text = ""; }
+                if (_txtVL != null) { _txtVL.Text = ""; }
+                if (_txtVU != null) { _txtVU.Text = ""; }
+                return;
+            }
+            var lh = roi.Lower != null ? roi.Lower.H : 0;
+            var ls = roi.Lower != null ? roi.Lower.S : 0;
+            var lv = roi.Lower != null ? roi.Lower.V : 0;
+            var uh = roi.Upper != null ? roi.Upper.H : 0;
+            var us = roi.Upper != null ? roi.Upper.S : 0;
+            var uv = roi.Upper != null ? roi.Upper.V : 0;
+
+            if (_txtHL != null) _txtHL.Text = lh.ToString();
+            if (_txtHU != null) _txtHU.Text = uh.ToString();
+            if (_txtSL != null) _txtSL.Text = ls.ToString();
+            if (_txtSU != null) _txtSU.Text = us.ToString();
+            if (_txtVL != null) _txtVL.Text = lv.ToString();
+            if (_txtVU != null) _txtVU.Text = uv.ToString();
+        }
+
+        // Persist HSV values from textboxes to current ROI
+        private void UpdateHsvFromInputs()
+        {
+            if (selectedRoiIndex < 0 || selectedRoiIndex >= roiList.Count) return;
+            var roi = roiList[selectedRoiIndex];
+            int hl, hu, sl, su, vl, vu;
+            if (!int.TryParse(_txtHL.Text, out hl)) hl = roi.Lower?.H ?? 0;
+            if (!int.TryParse(_txtHU.Text, out hu)) hu = roi.Upper?.H ?? 0;
+            if (!int.TryParse(_txtSL.Text, out sl)) sl = roi.Lower?.S ?? 0;
+            if (!int.TryParse(_txtSU.Text, out su)) su = roi.Upper?.S ?? 0;
+            if (!int.TryParse(_txtVL.Text, out vl)) vl = roi.Lower?.V ?? 0;
+            if (!int.TryParse(_txtVU.Text, out vu)) vu = roi.Upper?.V ?? 0;
+
+            hl = Math.Max(0, Math.Min(255, hl));
+            hu = Math.Max(0, Math.Min(255, hu));
+            sl = Math.Max(0, Math.Min(255, sl));
+            su = Math.Max(0, Math.Min(255, su));
+            vl = Math.Max(0, Math.Min(255, vl));
+            vu = Math.Max(0, Math.Min(255, vu));
+
+            roi.Lower = new HsvValue { H = hl, S = sl, V = vl };
+            roi.Upper = new HsvValue { H = hu, S = su, V = vu };
+            fovManager.Save(fovList);
+        }
+
         private void InitializeContextMenu()
         {
             contextMenu = new ContextMenuStrip();
@@ -364,7 +466,7 @@ namespace MPV
         {
             if (selectedRoiIndex < 0 || selectedRoiIndex >= roiList.Count)
             {
-                txtOkLower.Text = ""; txtOkUpper.Text = ""; chkReverse.Checked = false; txtLastScore.Text = ""; txtCenterX.Text = ""; txtCenterY.Text = ""; ptr_template.Image = null; return;
+                txtOkLower.Text = ""; txtOkUpper.Text = ""; chkReverse.Checked = false; txtLastScore.Text = ""; txtCenterX.Text = ""; txtCenterY.Text = ""; ptr_template.Image = null; _hsvPanel.Visible = false; grpTemplate.Text = "Template"; btnUpdateTemplate.Enabled = false; btnUpdateTemplate.Text = "Update Template"; return;
             }
             var roi = roiList[selectedRoiIndex];
             txtOkLower.Text = roi.OkScoreLower.ToString();
@@ -373,20 +475,70 @@ namespace MPV
             txtLastScore.Text = roi.LastScore.ToString();
             txtCenterX.Text = roi.X.ToString();
             txtCenterY.Text = roi.Y.ToString();
-            ptr_template.Image = roi.Template;
+
+            // toggle left panel content based on algorithm
+            var isTemplate = string.Equals(roi.Mode, "Template Matching", StringComparison.OrdinalIgnoreCase) && roi.Template != null;
+            if (isTemplate)
+            {
+                grpTemplate.Text = "Template";
+                ptr_template.Visible = true;
+                ptr_template.Image = roi.Template;
+                btnUpdateTemplate.Enabled = true;
+                btnUpdateTemplate.Text = "Update Template";
+                _hsvPanel.Visible = false;
+            }
+            else if (string.Equals(roi.Mode, "HSV", StringComparison.OrdinalIgnoreCase))
+            {
+                grpTemplate.Text = "HSV";
+                ptr_template.Visible = false;
+                ptr_template.Image = null;
+                _hsvPanel.Visible = true;
+                btnUpdateTemplate.Enabled = true; // use single button for HSV action
+                btnUpdateTemplate.Text = "Get HSV";
+                UpdateHsvPanelValues(roi);
+            }
+            else
+            {
+                grpTemplate.Text = "Template";
+                ptr_template.Visible = true;
+                ptr_template.Image = roi.Template;
+                btnUpdateTemplate.Enabled = true;
+                btnUpdateTemplate.Text = "Update Template";
+                _hsvPanel.Visible = false;
+            }
         }
 
         private void btnUpdateTemplate_Click(object sender, EventArgs e)
         {
-            if (selectedRoiIndex < 0 || selectedRoiIndex >= roiList.Count || _bitmap == null) return;
+            if (selectedRoiIndex < 0 || selectedRoiIndex >= roiList.Count) return;
             var roi = roiList[selectedRoiIndex];
-            Rectangle rect = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
-            rect.Intersect(new Rectangle(0,0,_bitmap.Width,_bitmap.Height));
-            if (rect.Width <=0 || rect.Height <=0) return;
+
+            if (string.Equals(roi.Mode, "HSV", StringComparison.OrdinalIgnoreCase))
+            {
+                if (_bitmap == null) return;
+                Rectangle rect = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
+                rect.Intersect(new Rectangle(0,0,_bitmap.Width,_bitmap.Height));
+                if (rect.Width <=0 || rect.Height <=0) return;
+                using (var roiBmp = new Bitmap(rect.Width, rect.Height))
+                using (var g = Graphics.FromImage(roiBmp))
+                {
+                    g.DrawImage(_bitmap, new Rectangle(0, 0, rect.Width, rect.Height), rect, GraphicsUnit.Pixel);
+                    var (lower, upper, _) = hsvAutoService.Compute(roiBmp, 15, 10);
+                    roi.Lower = lower; roi.Upper = upper; fovManager.Save(fovList);
+                    UpdateHsvPanelValues(roi);
+                }
+                return;
+            }
+
+            // default: template update
+            if (_bitmap == null) return;
+            Rectangle rectT = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
+            rectT.Intersect(new Rectangle(0,0,_bitmap.Width,_bitmap.Height));
+            if (rectT.Width <=0 || rectT.Height <=0) return;
             roi.Template?.Dispose();
-            Bitmap bmp = new Bitmap(rect.Width, rect.Height);
+            Bitmap bmp = new Bitmap(rectT.Width, rectT.Height);
             using (Graphics g = Graphics.FromImage(bmp))
-                g.DrawImage(_bitmap, new Rectangle(0,0,rect.Width,rect.Height), rect, GraphicsUnit.Pixel);
+                g.DrawImage(_bitmap, new Rectangle(0,0,rectT.Width,rectT.Height), rectT, GraphicsUnit.Pixel);
             roi.Template = bmp;
             // Persist template as base64 so it survives restarts
             roi.TemplateBase64 = BitmapToBase64Png(bmp);
@@ -718,7 +870,7 @@ namespace MPV
         {
             using (var ofd = new OpenFileDialog())
             {
-                ofd.Filter = "Image Files|*.png;*.jpg;*.jpeg;*.bmp";
+                ofd.Filter = "Image Files|*.png;*.jpg;*./jpeg;*.bmp";
                 if (ofd.ShowDialog() == DialogResult.OK)
                 {
                     var newFov = new FovRegion
