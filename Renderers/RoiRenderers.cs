@@ -53,20 +53,10 @@ namespace MPV.Renderers
                     displayRect.Inflate(-2, -2);
                 }
 
-                Color baseColor;
-                if (roi.Mode == "HSV")
-                {
-                    baseColor = (roi.Lower != null && roi.Upper != null) ? Color.LimeGreen : Color.Red;
-                }
-                else 
-                {
-                    baseColor = Color.Red;
-                }
+                // Always draw ROI in green as requested
+                Color baseColor = Color.LimeGreen;
 
-                if (i == selectedIndex)
-                    baseColor = Color.Orange;
-
-                using (Pen pen = new Pen(baseColor, (i == selectedIndex) ? 2 : 1))
+                using (Pen pen = new Pen(baseColor, 1))
                 {
                     g.DrawRectangle(pen, displayRect);
                 }
