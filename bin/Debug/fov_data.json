@@ -14,7 +14,7 @@
         "Height": 78,
         "IsHidden": false,
         "ExpectedLength": 0,
-        "Mode": "HSV",
+        "Mode": "Template Matching",
         "Algorithm": 0,
         "Lower": {
           "H": 96,
@@ -106,7 +106,7 @@
         "Height": 87,
         "IsHidden": false,
         "ExpectedLength": 0,
-        "Mode": "HSV",
+        "Mode": "Template Matching",
         "Algorithm": 0,
         "Lower": {
           "H": 0,

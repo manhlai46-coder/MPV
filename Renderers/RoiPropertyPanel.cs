@@ -59,7 +59,7 @@ namespace MPV.Renderers
             root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
 
             AddReadOnlyRow(root, "ID", roi.Id.ToString());
-            var txtName = new TextBox { Text = roi.Name, Dock = DockStyle.Fill };
+            var txtName = new TextBox { Text = roi.Name, Dock = DockStyle.Fill,ReadOnly = true };
             txtName.TextChanged += (s, e) => { roi.Name = txtName.Text; SaveRoi(); };
             AddControlRow(root, CreateLabel("Name"), txtName);
 
