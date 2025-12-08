@@ -143,3 +143,4 @@ D:\Manh-AT\MPV\obj\Debug\MPV.csproj.CoreCompileInputs.cache
 D:\Manh-AT\MPV\obj\Debug\MPV.csproj.Up2Date
 D:\Manh-AT\MPV\obj\Debug\MPV.exe
 D:\Manh-AT\MPV\obj\Debug\MPV.pdb
+D:\Manh-AT\MPV\obj\Debug\MPV.exe.config
