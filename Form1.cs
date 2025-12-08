@@ -312,6 +312,8 @@ namespace MPV
         {
             InitializeContextMenu();
             this.KeyPreview = true;
+            // giữ highlight node đang chọn khi TreeView mất focus
+            try { pn_property.HideSelection = false; } catch { }
             ptr_template.Image = null;
             SyncTemplatePanel();
             try { LoadFovToTreeView(); } catch (Exception ex) { MessageBox.Show("Lỗi khi load JSON: " + ex.Message); LoggerService.Error("Error loading JSON", ex);}        }
@@ -466,6 +468,21 @@ namespace MPV
                         selectedFovIndex,
                         selectedRoiIndex,
                         roiList);
+                    propertyPanel.RoiChanged += () => 
+                    {
+                        var currentNode = pn_property.SelectedNode; // nhớ node đang chọn
+                        SyncTemplatePanel();
+                        if (currentNode != null)
+                        {
+                            try
+                            {
+                                pn_property.SelectedNode = currentNode;
+                                currentNode.EnsureVisible();
+                                pn_property.Focus(); // ép TreeView lấy lại focus để không mất highlight
+                            }
+                            catch { }
+                        }
+                    }; // cập nhật panel trái khi thay đổi và giữ lựa chọn trên TreeView
                     propertyPanel.ShowRoiProperties(panelImage, roiList[selectedRoiIndex]);
                 }
                 pictureBox1.Invalidate();
@@ -509,11 +526,11 @@ namespace MPV
             }
             else
             {
-                grpTemplate.Text = "Template";
-                ptr_template.Visible = true;
-                ptr_template.Image = roi.Template;
-                btnUpdateTemplate.Enabled = true;
-                btnUpdateTemplate.Text = "Update Template";
+                grpTemplate.Text = "Algorithm";
+                ptr_template.Visible = false;
+                ptr_template.Image = null;
+                btnUpdateTemplate.Enabled = false;
+                btnUpdateTemplate.Text = "";
                 _hsvPanel.Visible = false;
             }
         }

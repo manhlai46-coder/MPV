@@ -13,8 +13,8 @@
         "Width": 63,
         "Height": 78,
         "IsHidden": false,
-        "ExpectedLength": 0,
-        "Mode": "Template Matching",
+        "ExpectedLength": 9,
+        "Mode": "HSV",
         "Algorithm": 0,
         "Lower": {
           "H": 96,
@@ -31,7 +31,7 @@
         "OkScoreLower": 80,
         "OkScoreUpper": 100,
         "ReverseSearch": false,
-        "LastScore": 100,
+        "LastScore": 0,
         "OkScore": 80
       },
       {

@@ -16,6 +16,7 @@ namespace MPV.Renderers
 {
     public class RoiPropertyPanel
     {
+        public event Action RoiChanged; // sự kiện để Form1 lắng nghe
         private readonly FovManager fovManager;
         private readonly List<FovRegion> fovList;
         private readonly PictureBox pictureBox;
@@ -84,12 +85,6 @@ namespace MPV.Renderers
 
             AddControlRow(root, CreateLabel("ROI"), roiGroup);
 
-            var cboType = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList };
-            cboType.Items.AddRange(new object[] { "Unknown", "Component", "Marking" });
-            cboType.SelectedItem = roi.Type ?? "Unknown";
-            cboType.SelectedIndexChanged += (s, e) => { roi.Type = cboType.SelectedItem.ToString(); SaveRoi(); };
-            AddControlRow(root, CreateLabel("Type"), cboType);
-
             var cboAlg = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList };
             cboAlg.Items.AddRange(new object[] { "Barcode", "HSV", "TemplateMatching" });
             string currentMode = roi.Mode;
@@ -101,6 +96,7 @@ namespace MPV.Renderers
                 roi.Mode = sel == "TemplateMatching" ? "Template Matching" : sel;
                 SaveRoi();
                 pictureBox.Invalidate();
+                RoiChanged?.Invoke();
             };
             AddControlRow(root, CreateLabel("Algorithm"), cboAlg);
 
