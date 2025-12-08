@@ -556,7 +556,10 @@ namespace MPV
         {
             if (selectedRoiIndex < 0 || selectedRoiIndex >= roiList.Count)
             {
-                txtOkLower.Text = ""; txtOkUpper.Text = ""; chkReverse.Checked = false; txtLastScore.Text = ""; txtCenterX.Text = ""; txtCenterY.Text = ""; ptr_template.Image = null; _hsvPanel.Visible = false; grpTemplate.Text = "Template"; btnUpdateTemplate.Enabled = false; btnUpdateTemplate.Text = "Update Template"; if (_barcodePanel != null) _barcodePanel.Visible = false; return;
+                txtOkLower.Text = ""; txtOkUpper.Text = ""; chkReverse.Checked = false; txtLastScore.Text = ""; txtCenterX.Text = ""; txtCenterY.Text = ""; ptr_template.Image = null; _hsvPanel.Visible = false; grpTemplate.Text = "Template"; btnUpdateTemplate.Enabled = false; btnUpdateTemplate.Text = "Update Template"; if (_barcodePanel != null) _barcodePanel.Visible = false;
+                // default show general controls when nothing selected
+                lblKRange.Visible = true; txtOkLower.Visible = true; txtOkUpper.Visible = true; chkReverse.Visible = true; lblScore.Visible = true; txtLastScore.Visible = true; lblCenter.Visible = true; txtCenterX.Visible = true; txtCenterY.Visible = true;
+                return;
             }
             var roi = roiList[selectedRoiIndex];
             txtOkLower.Text = roi.OkScoreLower.ToString();
@@ -576,6 +579,8 @@ namespace MPV
                 btnUpdateTemplate.Text = "Update Template";
                 _hsvPanel.Visible = false;
                 if (_barcodePanel != null) _barcodePanel.Visible = false;
+                // show general controls for template
+                lblKRange.Visible = true; txtOkLower.Visible = true; txtOkUpper.Visible = true; chkReverse.Visible = true; lblScore.Visible = true; txtLastScore.Visible = true; lblCenter.Visible = true; txtCenterX.Visible = true; txtCenterY.Visible = true;
             }
             else if (string.Equals(roi.Mode, "HSV", StringComparison.OrdinalIgnoreCase))
             {
@@ -587,6 +592,8 @@ namespace MPV
                 btnUpdateTemplate.Text = "Get HSV";
                 if (_barcodePanel != null) _barcodePanel.Visible = false;
                 UpdateHsvPanelValues(roi);
+                // show general controls for HSV
+                lblKRange.Visible = true; txtOkLower.Visible = true; txtOkUpper.Visible = true; chkReverse.Visible = true; lblScore.Visible = true; txtLastScore.Visible = true; lblCenter.Visible = true; txtCenterX.Visible = true; txtCenterY.Visible = true;
             }
             else
             {
@@ -602,6 +609,8 @@ namespace MPV
                 }
                 btnUpdateTemplate.Enabled = false;
                 btnUpdateTemplate.Text = "";
+                // hide unrelated controls for barcode
+                lblKRange.Visible = false; txtOkLower.Visible = false; txtOkUpper.Visible = false; chkReverse.Visible = false; lblScore.Visible = false; txtLastScore.Visible = false; lblCenter.Visible = false; txtCenterX.Visible = false; txtCenterY.Visible = false;
             }
         }
 
