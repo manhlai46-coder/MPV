@@ -51,6 +51,11 @@ namespace MPV
         private TextBox _txtVL; // V lower
         private TextBox _txtVU; // V upper
 
+        // Barcode panel controls
+        private Panel _barcodePanel;
+        private ComboBox _cboBarcodeType;
+        private TextBox _txtBarcodeLen;
+
         //AppDomain.CurrentDomain
         public Form1()
         {
@@ -90,6 +95,8 @@ namespace MPV
 
             // init HSV panel (hidden by default)
             InitHsvPanel();
+            // init Barcode panel (hidden by default)
+            InitBarcodePanel();
         }
 
         private void Form1_Shown(object sender, EventArgs e)
@@ -159,6 +166,49 @@ namespace MPV
             grpTemplate.Controls.Add(_hsvPanel);
         }
 
+        private void InitBarcodePanel()
+        {
+            _barcodePanel = new Panel { Width = grpTemplate.Width - 6, Height = 120, Left = 12, Top = 19, Visible = false, BorderStyle = BorderStyle.None };
+
+            int left = 8;
+            int top = 8;
+            int labelW = 80;
+            int ctrlW = _barcodePanel.Width - left - labelW - 16;
+
+            var lblType = new Label { Left = left, Top = top + 3, Width = labelW, Text = "Type:" };
+            _cboBarcodeType = new ComboBox { Left = left + labelW, Top = top, Width = ctrlW, DropDownStyle = ComboBoxStyle.DropDownList };
+            _cboBarcodeType.Items.AddRange(Enum.GetNames(typeof(BarcodeAlgorithm)));
+            _cboBarcodeType.SelectedIndexChanged += (s, e) =>
+            {
+                if (selectedRoiIndex < 0 || selectedRoiIndex >= roiList.Count) return;
+                if (Enum.TryParse<BarcodeAlgorithm>(_cboBarcodeType.SelectedItem?.ToString(), out var alg))
+                {
+                    roiList[selectedRoiIndex].Algorithm = alg;
+                    fovManager.Save(fovList);
+                }
+            };
+
+            var lblLen = new Label { Left = left, Top = top + 36 + 3, Width = labelW, Text = "Max Length:" };
+            _txtBarcodeLen = new TextBox { Left = left + labelW, Top = top + 36, Width = ctrlW, Text = "" };
+            _txtBarcodeLen.TextChanged += (s, e) =>
+            {
+                if (selectedRoiIndex < 0 || selectedRoiIndex >= roiList.Count) return;
+                if (int.TryParse(_txtBarcodeLen.Text, out int v))
+                {
+                    v = Math.Max(0, v);
+                    roiList[selectedRoiIndex].ExpectedLength = v;
+                    fovManager.Save(fovList);
+                }
+            };
+
+            _barcodePanel.Controls.Add(lblType);
+            _barcodePanel.Controls.Add(_cboBarcodeType);
+            _barcodePanel.Controls.Add(lblLen);
+            _barcodePanel.Controls.Add(_txtBarcodeLen);
+
+            grpTemplate.Controls.Add(_barcodePanel);
+        }
+
         private void UpdateHsvPanelValues(RoiRegion roi)
         {
             if (roi == null)
@@ -184,6 +234,19 @@ namespace MPV
             if (_txtSU != null) _txtSU.Text = us.ToString();
             if (_txtVL != null) _txtVL.Text = lv.ToString();
             if (_txtVU != null) _txtVU.Text = uv.ToString();
+        }
+
+        private void UpdateBarcodePanelValues(RoiRegion roi)
+        {
+            if (roi == null)
+            {
+                if (_cboBarcodeType != null) _cboBarcodeType.SelectedIndex = -1;
+                if (_txtBarcodeLen != null) _txtBarcodeLen.Text = "";
+                return;
+            }
+            var current = (roi.Algorithm ?? BarcodeAlgorithm.QRCode).ToString();
+            _cboBarcodeType.SelectedItem = current;
+            _txtBarcodeLen.Text = roi.ExpectedLength.ToString();
         }
 
         // Persist HSV values from textboxes to current ROI
@@ -493,7 +556,7 @@ namespace MPV
         {
             if (selectedRoiIndex < 0 || selectedRoiIndex >= roiList.Count)
             {
-                txtOkLower.Text = ""; txtOkUpper.Text = ""; chkReverse.Checked = false; txtLastScore.Text = ""; txtCenterX.Text = ""; txtCenterY.Text = ""; ptr_template.Image = null; _hsvPanel.Visible = false; grpTemplate.Text = "Template"; btnUpdateTemplate.Enabled = false; btnUpdateTemplate.Text = "Update Template"; return;
+                txtOkLower.Text = ""; txtOkUpper.Text = ""; chkReverse.Checked = false; txtLastScore.Text = ""; txtCenterX.Text = ""; txtCenterY.Text = ""; ptr_template.Image = null; _hsvPanel.Visible = false; grpTemplate.Text = "Template"; btnUpdateTemplate.Enabled = false; btnUpdateTemplate.Text = "Update Template"; if (_barcodePanel != null) _barcodePanel.Visible = false; return;
             }
             var roi = roiList[selectedRoiIndex];
             txtOkLower.Text = roi.OkScoreLower.ToString();
@@ -503,7 +566,6 @@ namespace MPV
             txtCenterX.Text = roi.X.ToString();
             txtCenterY.Text = roi.Y.ToString();
 
-            // toggle left panel content based on algorithm
             var isTemplate = string.Equals(roi.Mode, "Template Matching", StringComparison.OrdinalIgnoreCase) && roi.Template != null;
             if (isTemplate)
             {
@@ -513,6 +575,7 @@ namespace MPV
                 btnUpdateTemplate.Enabled = true;
                 btnUpdateTemplate.Text = "Update Template";
                 _hsvPanel.Visible = false;
+                if (_barcodePanel != null) _barcodePanel.Visible = false;
             }
             else if (string.Equals(roi.Mode, "HSV", StringComparison.OrdinalIgnoreCase))
             {
@@ -522,16 +585,23 @@ namespace MPV
                 _hsvPanel.Visible = true;
                 btnUpdateTemplate.Enabled = true; // use single button for HSV action
                 btnUpdateTemplate.Text = "Get HSV";
+                if (_barcodePanel != null) _barcodePanel.Visible = false;
                 UpdateHsvPanelValues(roi);
             }
             else
             {
+                // Barcode mode
                 grpTemplate.Text = "Algorithm";
                 ptr_template.Visible = false;
                 ptr_template.Image = null;
+                _hsvPanel.Visible = false;
+                if (_barcodePanel != null)
+                {
+                    _barcodePanel.Visible = true;
+                    UpdateBarcodePanelValues(roi);
+                }
                 btnUpdateTemplate.Enabled = false;
                 btnUpdateTemplate.Text = "";
-                _hsvPanel.Visible = false;
             }
         }
 

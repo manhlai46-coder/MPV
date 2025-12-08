@@ -103,7 +103,48 @@ namespace MPV.Renderers
             panelImage.Controls.Add(root);
         }
 
-        
+        private void RenderBarcodePanel(Panel panel, RoiRegion roi)
+        {
+            panel.Controls.Clear();
+            var t = CreateInnerTable();
+            AddReadOnlyRow(t, "X", roi.X.ToString());
+            AddReadOnlyRow(t, "Y", roi.Y.ToString());
+            AddReadOnlyRow(t, "Width", roi.Width.ToString());
+            AddReadOnlyRow(t, "Height", roi.Height.ToString());
+
+            // Barcode Algorithm selection
+            var lblAlg = CreateLabel("Type:");
+            var cbo = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList };
+            cbo.Items.AddRange(Enum.GetNames(typeof(BarcodeAlgorithm)));
+            var current = roi.Algorithm.HasValue ? roi.Algorithm.Value.ToString() : BarcodeAlgorithm.QRCode.ToString();
+            cbo.SelectedItem = current;
+            cbo.SelectedIndexChanged += (s, e) =>
+            {
+                if (Enum.TryParse<BarcodeAlgorithm>(cbo.SelectedItem.ToString(), out var alg))
+                {
+                    roi.Algorithm = alg;
+                    SaveRoi();
+                    pictureBox.Invalidate();
+                }
+            };
+            AddControlRow(t, lblAlg, cbo);
+
+            // Expected length textbox
+            var lblLen = CreateLabel("Max Length:");
+            var txtLen = new TextBox { Text = roi.ExpectedLength.ToString(), Dock = DockStyle.Fill };
+            txtLen.TextChanged += (s, e) =>
+            {
+                if (int.TryParse(txtLen.Text, out var len))
+                {
+                    roi.ExpectedLength = len;
+                    SaveRoi();
+                }
+            };
+            AddControlRow(t, lblLen, txtLen);
+
+            AddHiddenCheckbox(t, roi);
+            panel.Controls.Add(t);
+        }
 
         private void RenderHsvPanel(Panel panel, RoiRegion roi)
         {
@@ -273,5 +314,23 @@ namespace MPV.Renderers
 
         private Label CreateMiniLabel(string text) => new Label { Text = text, AutoSize = true, Padding = new Padding(3, 3, 3, 3) };
         private TextBox CreateValueBox(int v) => new TextBox { Text = v.ToString(), ReadOnly = true, Width = 60 };
+
+        public void RenderModePanel(Panel panel, RoiRegion roi)
+        {
+            if (roi == null) { panel.Controls.Clear(); return; }
+            var mode = roi.Mode ?? "Barcode";
+            if (string.Equals(mode, "Template Matching", StringComparison.OrdinalIgnoreCase) || string.Equals(mode, "TemplateMatching", StringComparison.OrdinalIgnoreCase))
+            {
+                RenderTemplatePanel(panel, roi);
+            }
+            else if (string.Equals(mode, "HSV", StringComparison.OrdinalIgnoreCase))
+            {
+                RenderHsvPanel(panel, roi);
+            }
+            else // Barcode default
+            {
+                RenderBarcodePanel(panel, roi);
+            }
+        }
     }
 }

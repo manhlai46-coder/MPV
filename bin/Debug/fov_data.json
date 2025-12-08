@@ -14,7 +14,7 @@
         "Height": 78,
         "IsHidden": false,
         "ExpectedLength": 9,
-        "Mode": "HSV",
+        "Mode": "Barcode",
         "Algorithm": 0,
         "Lower": {
           "H": 96,
