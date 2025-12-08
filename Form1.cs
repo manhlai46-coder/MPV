@@ -355,21 +355,21 @@ namespace MPV
             if (_roiToUpdateIndex >= 0 && _roiToUpdateIndex < roiList.Count)
             {
                 var roi = roiList[_roiToUpdateIndex];
-                if (roi.X == 0 && roi.Y == 0 && roi.Width == 0 && roi.Height == 0)
+                // If ROI already has a drawn rectangle, do not allow drawing; require reset first
+                if (roi.Width > 0 || roi.Height > 0)
                 {
-                    _drawMode = true;
-                    _isUpdatingRoi = true;
-                    Cursor = Cursors.Cross;
-                   // MessageBox.Show("Kéo chuột trên ảnh để vẽ vùng ROI mới.");
+                    MessageBox.Show("ROI đã được vẽ. Vui lòng Reset ROI trước khi vẽ lại để tránh thao tác nhầm.");
                     return;
                 }
+
+                // Allow drawing only when ROI is empty (not yet drawn)
+                _drawMode = true;
+                _isUpdatingRoi = true;
+                Cursor = Cursors.Cross;
+                return;
             }
 
-            // Default: add new ROI (if not updating)
-            _drawMode = true;
-            _isUpdatingRoi = false;
-            Cursor = Cursors.Cross;
-          //  MessageBox.Show("Kéo chuột trên ảnh để vẽ vùng ROI mới.");
+            MessageBox.Show("Không có ROI hợp lệ để cập nhật.");
         }
         private void Form1_Load(object sender, EventArgs e)
         {
@@ -1198,13 +1198,7 @@ namespace MPV
                 roi.X = realX; roi.Y = realY; roi.Width = realW; roi.Height = realH;
                 fovManager.Save(fovList);
             }
-            else if (selectedFovIndex >= 0 && selectedFovIndex < fovList.Count)
-            {
-                var newRoi = new RoiRegion { X = realX, Y = realY, Width = realW, Height = realH, IsHidden = false };
-                fovList[selectedFovIndex].Rois.Add(newRoi);
-                fovManager.Save(fovList);
-                roiList = fovList[selectedFovIndex].Rois;
-            }
+            // Remove adding new ROI during draw; adding should be done via dedicated button
             _drawMode = false; _isUpdatingRoi = false; Cursor = Cursors.Default; pictureBox1.Invalidate();
         }
 
