@@ -504,6 +504,8 @@ namespace MPV
             }
             else if (e.Node.Text.StartsWith("ROI "))
             {
+                // Chỉ hiển thị ROI được chọn
+                _singleRoiMode = true;
                 if (!int.TryParse(e.Node.Text.Replace("ROI ", ""), out int roiIndex)) return;
                 selectedRoiIndex = roiIndex - 1;
                 if (selectedFovIndex >= 0 && selectedFovIndex < fovList.Count)
@@ -549,6 +551,59 @@ namespace MPV
                     propertyPanel.ShowRoiProperties(panelImage, roiList[selectedRoiIndex]);
                 }
                 pictureBox1.Invalidate();
+            }
+            else
+            {
+                // Các node khác: hiển thị tất cả ROI
+                _singleRoiMode = false;
+                if (e.Node.Text.StartsWith("ROI "))
+                {
+                    if (!int.TryParse(e.Node.Text.Replace("ROI ", ""), out int roiIndex)) return;
+                    selectedRoiIndex = roiIndex - 1;
+                    if (selectedFovIndex >= 0 && selectedFovIndex < fovList.Count)
+                        roiList = fovList[selectedFovIndex].Rois;
+                    // Restore template for selected ROI if needed
+                    if (selectedRoiIndex >= 0 && selectedRoiIndex < roiList.Count)
+                    {
+                        var r = roiList[selectedRoiIndex];
+                        if (r.Template == null && !string.IsNullOrEmpty(r.TemplateBase64))
+                        {
+                            try { r.Template = Base64ToBitmap(r.TemplateBase64); } catch { }
+                        }
+                    }
+                    SyncTemplatePanel();
+
+                    // render ROI property panel into panelImage
+                    panelImage.Controls.Clear();
+                    if (selectedRoiIndex >= 0 && selectedRoiIndex < roiList.Count)
+                    {
+                        var propertyPanel = new RoiPropertyPanel(
+                            fovManager,
+                            fovList,
+                            pictureBox1,
+                            _bitmap,
+                            selectedFovIndex,
+                            selectedRoiIndex,
+                            roiList);
+                        propertyPanel.RoiChanged += () => 
+                        {
+                            var currentNode = pn_property.SelectedNode; // nhớ node đang chọn
+                            SyncTemplatePanel();
+                            if (currentNode != null)
+                            {
+                                try
+                                {
+                                    pn_property.SelectedNode = currentNode;
+                                    currentNode.EnsureVisible();
+                                    pn_property.Focus(); // ép TreeView lấy lại focus để không mất highlight
+                                }
+                                catch { }
+                            }
+                        }; // cập nhật panel trái khi thay đổi và giữ lựa chọn trên TreeView
+                        propertyPanel.ShowRoiProperties(panelImage, roiList[selectedRoiIndex]);
+                    }
+                    pictureBox1.Invalidate();
+                }
             }
             
         }
