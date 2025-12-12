@@ -58,10 +58,7 @@
             this.btn_addfov = new System.Windows.Forms.Button();
             this.panelImage = new System.Windows.Forms.Panel();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-<<<<<<< HEAD
-=======
             this.openToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
->>>>>>> 0c165c751373700576abac779002e026e8bf07d9
             this.saveToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.menuStrip1.SuspendLayout();
@@ -328,11 +325,7 @@
             this.panelScroll.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panelScroll.Location = new System.Drawing.Point(0, 0);
             this.panelScroll.Name = "panelScroll";
-<<<<<<< HEAD
             this.panelScroll.Size = new System.Drawing.Size(552, 493);
-=======
-            this.panelScroll.Size = new System.Drawing.Size(720, 722);
->>>>>>> 0c165c751373700576abac779002e026e8bf07d9
             this.panelScroll.TabIndex = 200;
             // 
             // splitContainer3
@@ -390,33 +383,24 @@
             // fileToolStripMenuItem
             // 
             this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-<<<<<<< HEAD
-=======
             this.openToolStripMenuItem,
->>>>>>> 0c165c751373700576abac779002e026e8bf07d9
             this.saveToolStripMenuItem});
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
             this.fileToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
             this.fileToolStripMenuItem.Text = "File";
             // 
-<<<<<<< HEAD
-=======
             // openToolStripMenuItem
             // 
             this.openToolStripMenuItem.Name = "openToolStripMenuItem";
             this.openToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.openToolStripMenuItem.Text = "Open";
             // 
->>>>>>> 0c165c751373700576abac779002e026e8bf07d9
             // saveToolStripMenuItem
             // 
             this.saveToolStripMenuItem.Name = "saveToolStripMenuItem";
             this.saveToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.saveToolStripMenuItem.Text = "Save";
-<<<<<<< HEAD
             this.saveToolStripMenuItem.Click += new System.EventHandler(this.saveToolStripMenuItem_Click);
-=======
->>>>>>> 0c165c751373700576abac779002e026e8bf07d9
             // 
             // Form1
             // 
@@ -486,10 +470,7 @@
         private System.Windows.Forms.Panel panelImage;
         private System.Windows.Forms.Panel panelScroll;
         private System.Windows.Forms.ToolStripMenuItem fileToolStripMenuItem;
-<<<<<<< HEAD
-=======
         private System.Windows.Forms.ToolStripMenuItem openToolStripMenuItem;
->>>>>>> 0c165c751373700576abac779002e026e8bf07d9
         private System.Windows.Forms.ToolStripMenuItem saveToolStripMenuItem;
     }
 }

@@ -7,6 +7,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.IO;
+using MPV.Models;
+using MPV.Service;
+using MPV.Services;
+using OpenCvSharp;
+using OpenCvSharp.Extensions;
 
 namespace MPV
 {
@@ -15,11 +21,27 @@ namespace MPV
         private Form1 _form1;
         private int _numpass;
         private int _numfail;
+        private List<FovRegion> _fovs = new List<FovRegion>();
+        private FovManager _fovManager;
+
+        // services for evaluation
+        private readonly BarcodeService _barcodeService;
+        private readonly HsvService _hsvService;
+        private readonly HsvAutoService _hsvAutoService = new HsvAutoService();
 
         public lb_pass(Form1 form1)
         {
             InitializeComponent();
             _form1 = form1;
+            try
+            {
+                string fovPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "fov_data.json");
+                _fovManager = new FovManager(fovPath);
+            }
+            catch { }
+
+            _barcodeService = new BarcodeService();
+            _hsvService = new HsvService();
         }
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
@@ -27,11 +49,378 @@ namespace MPV
             base.OnFormClosed(e);
         }
 
-        private void Form2_Load(object sender, EventArgs e)
+        protected override void OnShown(EventArgs e)
         {
-
+            base.OnShown(e);
+            // Reload and redraw when the form becomes visible - ensures latest data from Form1 is used
+            try { _fovs = _fovManager != null ? _fovManager.Load() : new List<FovRegion>(); } catch { _fovs = new List<FovRegion>(); }
+            try
+            {
+                RunAllFovs();
+                DrawVerticalSplits();
+            }
+            catch { }
         }
 
-        
+        private void Form2_Load(object sender, EventArgs e)
+        {
+            try { _fovs = _fovManager != null ? _fovManager.Load() : new List<FovRegion>(); } catch { _fovs = new List<FovRegion>(); }
+
+            // Run autorun on load so the form behaves the same as clicking the Auto Run menu
+            try
+            {
+                RunAllFovs();
+                DrawVerticalSplits();
+            }
+            catch { }
+        }
+
+        private void autoRunToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            try { _fovs = _fovManager != null ? _fovManager.Load() : new List<FovRegion>(); } catch { _fovs = new List<FovRegion>(); }
+            RunAllFovs();
+            DrawVerticalSplits();
+        }
+
+        private void resetToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            _numpass = 0;
+            _numfail = 0;
+            label1.Text = "Pass";
+            lb_fail.Text = "Fail";
+            panel1.BackColor = SystemColors.Control;
+            ptr_image.Image = null;
+        }
+
+        private Bitmap LoadFovBitmap(FovRegion fov)
+        {
+            if (fov == null) return null;
+            try
+            {
+                if (!string.IsNullOrEmpty(fov.ImagePath) && File.Exists(fov.ImagePath))
+                {
+                    return new Bitmap(fov.ImagePath);
+                }
+                if (!string.IsNullOrEmpty(fov.ImageBase64))
+                {
+                    return Base64ToBitmap(fov.ImageBase64);
+                }
+            }
+            catch { }
+            return null;
+        }
+
+        private Bitmap Base64ToBitmap(string base64)
+        {
+            try
+            {
+                var bytes = Convert.FromBase64String(base64);
+                using (var ms = new MemoryStream(bytes))
+                {
+                    return new Bitmap(ms);
+                }
+            }
+            catch { return null; }
+        }
+
+        private void DrawVerticalSplits()
+        {
+            int count = _fovs != null ? _fovs.Count : 0;
+            if (count <= 0)
+            {
+                ptr_image.Image = null;
+                return;
+            }
+            var bmp = new Bitmap(Math.Max(1, ptr_image.Width), Math.Max(1, ptr_image.Height));
+            using (var g = Graphics.FromImage(bmp))
+            {
+                g.Clear(Color.Black);
+                int sectionWidth = Math.Max(1, bmp.Width / count);
+                for (int i = 0; i < count; i++)
+                {
+                    var rect = new Rectangle(i * sectionWidth, 0, i == count - 1 ? bmp.Width - i * sectionWidth : sectionWidth, bmp.Height);
+
+                    // draw a background for the section
+                    using (var brush = new SolidBrush(i % 2 == 0 ? Color.DimGray : Color.Gray))
+                    { g.FillRectangle(brush, rect); }
+
+                    // draw a border and label
+                    using (var pen = new Pen(Color.White, 2)) { g.DrawRectangle(pen, rect); }
+                    using (var font = new Font("Segoe UI", 10f))
+                    using (var textBrush = new SolidBrush(Color.Yellow))
+                    { g.DrawString($"FOV {i + 1}", font, textBrush, rect.X + 6, rect.Y + 6); }
+
+                    // attempt to load and draw the FOV image centered and fitted inside rect
+                    Bitmap fovBmp = null;
+                    try { fovBmp = LoadFovBitmap(_fovs[i]); } catch { fovBmp = null; }
+                    Rectangle destRect = Rectangle.Empty;
+                    if (fovBmp != null)
+                    {
+                        try
+                        {
+                            // compute fitted destination rect preserving aspect ratio, fill section area (no reserved top space)
+                            float imgAspect = fovBmp.Width / (float)fovBmp.Height;
+                            float rectAspect = rect.Width / (float)rect.Height;
+                            int destW, destH;
+                            if (imgAspect > rectAspect)
+                            {
+                                destW = rect.Width - 4; // small padding
+                                destH = (int)(destW / imgAspect);
+                            }
+                            else
+                            {
+                                destH = rect.Height - 4; // small padding
+                                destW = (int)(destH * imgAspect);
+                            }
+                            if (destW <= 0) destW = 1;
+                            if (destH <= 0) destH = 1;
+                            int destX = rect.X + (rect.Width - destW) / 2;
+                            int destY = rect.Y + (rect.Height - destH) / 2;
+                            destRect = new Rectangle(destX, destY, destW, destH);
+                            g.DrawImage(fovBmp, destRect);
+
+                            // draw label on top-left corner (over image)
+                            using (var font = new Font("Segoe UI", 10f))
+                            using (var textBrush = new SolidBrush(Color.Yellow))
+                            {
+                                g.DrawString($"FOV {i + 1}", font, textBrush, rect.X + 6, rect.Y + 6);
+                            }
+
+                            // draw ROIs for this FOV over destRect
+                            var rois = _fovs[i].Rois ?? new List<RoiRegion>();
+                            float scaleX = destRect.Width / (float)fovBmp.Width;
+                            float scaleY = destRect.Height / (float)fovBmp.Height;
+                            for (int r = 0; r < rois.Count; r++)
+                            {
+                                var roi = rois[r];
+                                if (roi.IsHidden) continue;
+                                // compute display rect
+                                var dr = new Rectangle(
+                                    destRect.X + (int)(roi.X * scaleX),
+                                    destRect.Y + (int)(roi.Y * scaleY),
+                                    Math.Max(1, (int)(roi.Width * scaleX)),
+                                    Math.Max(1, (int)(roi.Height * scaleY))
+                                );
+                                // determine pass/fail: use LastScore if present else treat as fail
+                                bool pass = false;
+                                try { pass = EvaluateScoreLocal(roi, roi.LastScore); } catch { pass = false; }
+
+                                using (var penR = new Pen(pass ? Color.LimeGreen : Color.Red, 2))
+                                {
+                                    g.DrawRectangle(penR, dr);
+                                }
+                                using (var fnt = new Font("Arial", 9, FontStyle.Bold))
+                                using (var br = new SolidBrush(pass ? Color.LimeGreen : Color.Red))
+                                {
+                                    g.DrawString($"{r + 1}", fnt, br, dr.X, Math.Max(rect.Y + 2, dr.Y - 16));
+                                }
+                            }
+
+                        }
+                        catch { }
+                        finally { fovBmp.Dispose(); }
+                    }
+                    else
+                    {
+                        // draw placeholder text
+                        using (var font = new Font("Segoe UI", 9f))
+                        using (var tb = new SolidBrush(Color.White))
+                        {
+                            var msg = "(No image)";
+                            var size = g.MeasureString(msg, font);
+                            float x = rect.X + (rect.Width - size.Width) / 2;
+                            float y = rect.Y + (rect.Height - size.Height) / 2;
+                            g.DrawString(msg, font, tb, x, y);
+                        }
+                    }
+                }
+            }
+            // replace existing image on picturebox
+            var old = ptr_image.Image;
+            ptr_image.Image = bmp;
+            if (old != null) try { old.Dispose(); } catch { }
+        }
+
+        private bool EvaluateScoreLocal(RoiRegion roi, int score)
+        {
+            bool inRange = score >= roi.OkScoreLower && score <= roi.OkScoreUpper;
+            return roi.ReverseSearch ? !inRange : inRange;
+        }
+
+        // Determine whether ROI mode is template matching
+        private bool IsTemplateMode(string mode)
+        {
+            if (string.IsNullOrEmpty(mode)) return false;
+            return string.Equals(mode, "Template Matching", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(mode, "TemplateMatching", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private int RunTemplateMatchingLocal(RoiRegion roi, Bitmap fovBitmap, out Rectangle matchRect, out double matchScore)
+        {
+            matchRect = Rectangle.Empty;
+            matchScore = 0;
+            if (roi == null || roi.Template == null || fovBitmap == null) return 0;
+
+            var searchRect = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
+            var fovRect = new Rectangle(0, 0, fovBitmap.Width, fovBitmap.Height);
+            searchRect.Intersect(fovRect);
+            if (searchRect.Width <= 0 || searchRect.Height <= 0) return 0;
+
+            using (var searchBmp = new Bitmap(searchRect.Width, searchRect.Height))
+            using (var g = Graphics.FromImage(searchBmp))
+            {
+                g.DrawImage(fovBitmap, new Rectangle(0, 0, searchRect.Width, searchRect.Height), searchRect, GraphicsUnit.Pixel);
+
+                using (Mat img = BitmapConverter.ToMat(searchBmp))
+                using (Mat templ = BitmapConverter.ToMat(roi.Template))
+                using (Mat imgGray = new Mat())
+                using (Mat templGray = new Mat())
+                {
+                    if (img.Empty() || templ.Empty()) return 0;
+
+                    if (img.Channels() > 1)
+                        Cv2.CvtColor(img, imgGray, ColorConversionCodes.BGR2GRAY);
+                    else
+                        img.CopyTo(imgGray);
+
+                    if (templ.Channels() > 1)
+                        Cv2.CvtColor(templ, templGray, ColorConversionCodes.BGR2GRAY);
+                    else
+                        templ.CopyTo(templGray);
+
+                    if (imgGray.Width < templGray.Width || imgGray.Height < templGray.Height)
+                        return 0;
+
+                    using (Mat result = new Mat(imgGray.Rows - templGray.Rows + 1, imgGray.Cols - templGray.Cols + 1, MatType.CV_32FC1))
+                    {
+                        Cv2.MatchTemplate(imgGray, templGray, result, TemplateMatchModes.CCoeffNormed);
+                        result.MinMaxLoc(out double _, out double maxVal, out _, out OpenCvSharp.Point maxLoc);
+
+                        matchScore = maxVal;
+                        matchRect = new Rectangle(searchRect.X + maxLoc.X, searchRect.Y + maxLoc.Y, templGray.Width, templGray.Height);
+                        int scoreInt = (int)Math.Round(maxVal * 100.0);
+                        return scoreInt;
+                    }
+                }
+            }
+        }
+
+        private void RunAllFovs()
+        {
+            if (_fovs == null || _fovs.Count == 0)
+            {
+                panel1.BackColor = Color.Red;
+                _numfail++;
+                lb_fail.Text = $"Fail: {_numfail}";
+                return;
+            }
+
+            bool allFovsPass = true;
+            for (int i = 0; i < _fovs.Count; i++)
+            {
+                var f = _fovs[i];
+                bool fovPass = true;
+                Bitmap fovBmp = LoadFovBitmap(f);
+                if (fovBmp == null)
+                {
+                    fovPass = false;
+                }
+                else
+                {
+                    try
+                    {
+                        var rois = f.Rois ?? new List<RoiRegion>();
+                        for (int r = 0; r < rois.Count; r++)
+                        {
+                            var roi = rois[r];
+                            if (roi.IsHidden) continue;
+
+                            int score = 0;
+                            // ensure template loaded
+                            if (roi.Template == null && !string.IsNullOrEmpty(roi.TemplateBase64))
+                            {
+                                try { roi.Template = Base64ToBitmap(roi.TemplateBase64); } catch { roi.Template = null; }
+                            }
+
+                            if (IsTemplateMode(roi.Mode) && roi.Template != null)
+                            {
+                                Rectangle mrect; double mscore;
+                                score = RunTemplateMatchingLocal(roi, fovBmp, out mrect, out mscore);
+                                roi.MatchScore = mscore; roi.MatchRect = mrect;
+                            }
+                            else if (string.Equals(roi.Mode, "HSV", StringComparison.OrdinalIgnoreCase))
+                            {
+                                Rectangle rect = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
+                                rect.Intersect(new Rectangle(0,0,fovBmp.Width,fovBmp.Height));
+                                if (rect.Width <=0 || rect.Height <=0) { score = 0; }
+                                else
+                                {
+                                    using (var roiBmp = new Bitmap(rect.Width, rect.Height))
+                                    using (var g = Graphics.FromImage(roiBmp))
+                                    {
+                                        g.DrawImage(fovBmp, new Rectangle(0,0,rect.Width,rect.Height), rect, GraphicsUnit.Pixel);
+                                        var (lowerAuto, upperAuto, _) = _hsvAutoService.Compute(roiBmp, 15, 10);
+                                        if (roi.Lower == null || roi.Upper == null)
+                                        {
+                                            roi.Lower = lowerAuto; roi.Upper = upperAuto;
+                                        }
+                                        var lowerRange = new HsvRange(roi.Lower.H, roi.Lower.H, roi.Lower.S, roi.Lower.S, roi.Lower.V, roi.Lower.V);
+                                        var upperRange = new HsvRange(roi.Upper.H, roi.Upper.H, roi.Upper.S, roi.Upper.S, roi.Upper.V, roi.Upper.V);
+                                        double matchPct;
+                                        _hsvService.DetectColor(roiBmp, lowerRange, upperRange, out matchPct);
+                                        score = (int)Math.Round(matchPct);
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                Rectangle rect = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
+                                rect.Intersect(new Rectangle(0,0,fovBmp.Width,fovBmp.Height));
+                                if (rect.Width <=0 || rect.Height <=0) { score = 0; }
+                                else
+                                {
+                                    using (var roiBmp = new Bitmap(rect.Width, rect.Height))
+                                    using (var g = Graphics.FromImage(roiBmp))
+                                    {
+                                        g.DrawImage(fovBmp, new Rectangle(0,0,rect.Width,rect.Height), rect, GraphicsUnit.Pixel);
+                                        var algorithm = roi.Algorithm ?? MPV.Enums.BarcodeAlgorithm.QRCode;
+                                        string decoded = _barcodeService.Decode(roiBmp, algorithm);
+                                        bool ok = !string.IsNullOrWhiteSpace(decoded) && (roi.ExpectedLength <=0 || decoded.Length == roi.ExpectedLength);
+                                        score = ok ? 100 : 0;
+                                    }
+                                }
+                            }
+
+                            roi.LastScore = score;
+                            bool roiPass = EvaluateScoreLocal(roi, score);
+                            if (!roiPass) fovPass = false;
+                        }
+                    }
+                    finally
+                    {
+                        fovBmp.Dispose();
+                    }
+                }
+
+                if (!fovPass) allFovsPass = false;
+            }
+
+            if (allFovsPass)
+            {
+                panel1.BackColor = Color.Green;
+                _numpass++;
+                label1.Text = $"Pass: {_numpass}";
+            }
+            else
+            {
+                panel1.BackColor = Color.Red;
+                _numfail++;
+                lb_fail.Text = $"Fail: {_numfail}";
+            }
+
+            // Save results back so DrawVerticalSplits can use LastScore
+            try { _fovManager.Save(_fovs); } catch { }
+        }
+
     }
 }

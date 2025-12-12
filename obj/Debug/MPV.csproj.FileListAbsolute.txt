@@ -152,3 +152,4 @@ D:\Manh-AT\MPV\obj\Debug\MPV.exe
 D:\Manh-AT\MPV\obj\Debug\MPV.pdb
 D:\Manh-AT\MPV\obj\Debug\MPV.exe.config
 >>>>>>> 0c165c751373700576abac779002e026e8bf07d9
+C:\Users\laidu\source\repos\manhlai46-coder\MPV\obj\Debug\MPV.lb_pass.resources
