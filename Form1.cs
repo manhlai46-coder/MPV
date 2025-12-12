@@ -446,6 +446,8 @@ namespace MPV
 
             if (e.Node.Text.StartsWith("FOV "))
             {
+                // when selecting FOV, show all ROIs
+                _singleRoiMode = false;
                 if (!int.TryParse(e.Node.Text.Replace("FOV ", ""), out int fovIndex)) return;
                 selectedFovIndex = fovIndex - 1;
                 selectedRoiIndex = -1;
@@ -504,6 +506,8 @@ namespace MPV
             }
             else if (e.Node.Text.StartsWith("ROI "))
             {
+                // when selecting ROI, show only that ROI
+                _singleRoiMode = true;
                 if (!int.TryParse(e.Node.Text.Replace("ROI ", ""), out int roiIndex)) return;
                 selectedRoiIndex = roiIndex - 1;
                 if (selectedFovIndex >= 0 && selectedFovIndex < fovList.Count)
@@ -871,109 +875,6 @@ namespace MPV
             lb_pass f2 = new lb_pass(this); // truyền Form1 vào Form2
             this.Hide();                // ẩn Form1
             f2.Show();
-
-            //    if (selectedFovIndex < 0 || selectedFovIndex >= fovList.Count)
-            //    {
-            //        MessageBox.Show("Hãy chọn FOV trước.");
-            //        return;
-            //    }
-
-            //    var fov = fovList[selectedFovIndex];
-            //    if (File.Exists(fov.ImagePath))
-            //    {
-            //        _bitmap = new Bitmap(fov.ImagePath);
-            //        // Persist FOV image to base64 when loading from file
-            //        try { fov.ImageBase64 = BitmapToBase64Png(_bitmap); fovManager.Save(fovList); } catch { }
-            //    }
-            //    else if (!string.IsNullOrEmpty(fov.ImageBase64))
-            //    {
-            //        try { _bitmap = Base64ToBitmap(fov.ImageBase64); }
-            //        catch { MessageBox.Show("Không thể đọc ảnh FOV từ base64."); return; }
-            //    }
-            //    else
-            //    {
-            //        MessageBox.Show("Không tìm thấy ảnh FOV.");
-            //        return;
-            //    }
-
-            //    pictureBox1.Image = _bitmap;
-            //    pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
-            //    roiList = fov.Rois;
-            //    // ensure zoom applies to new image
-            //    ResetZoom();
-
-            //    _lastTestResults.Clear();
-
-            //    for (int i = 0; i < roiList.Count; i++)
-            //    {
-            //        var roi = roiList[i];
-            //        if (roi.IsHidden) continue;
-
-            //        bool pass = false;
-            //        Rectangle rect = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
-            //        rect.Intersect(new Rectangle(0, 0, _bitmap.Width, _bitmap.Height));
-            //        if (rect.Width <= 0 || rect.Height <= 0)
-            //        {
-            //            _lastTestResults[(selectedFovIndex, i)] = false;
-            //            continue;
-            //        }
-
-            //        // Handle Template Matching separately (use full FOV with ROI-limited search)
-            //        if (string.Equals(roi.Mode, "Template Matching", StringComparison.OrdinalIgnoreCase) && roi.Template != null)
-            //        {
-            //            Rectangle mrect; double mscore;
-            //            int tscore = RunTemplateMatching(roi, _bitmap, out mrect, out mscore);
-            //            roi.MatchRect = mrect; roi.MatchScore = mscore;
-            //            pass = EvaluateScore(roi, tscore);
-            //            _lastTestResults[(selectedFovIndex, i)] = pass;
-            //            continue;
-            //        }
-
-            //        using (var roiBmp = new Bitmap(rect.Width, rect.Height))
-            //        using (var g = Graphics.FromImage(roiBmp))
-            //        {
-            //            g.DrawImage(_bitmap, new Rectangle(0, 0, rect.Width, rect.Height), rect, GraphicsUnit.Pixel);
-            //            if (string.Equals(roi.Mode, "HSV", StringComparison.OrdinalIgnoreCase))
-            //            {
-            //                // Respect configured HSV ranges; compute only if missing
-            //                if (roi.Lower == null || roi.Upper == null)
-            //                {
-            //                    var (lowerAuto, upperAuto, stats) = hsvAutoService.Compute(roiBmp, 15, 10);
-            //                    roi.Lower = lowerAuto;
-            //                    roi.Upper = upperAuto;
-            //                }
-            //                var lowerRange = new HsvRange(roi.Lower.H, roi.Lower.H, roi.Lower.S, roi.Lower.S, roi.Lower.V, roi.Lower.V);
-            //                var upperRange = new HsvRange(roi.Upper.H, roi.Upper.H, roi.Upper.S, roi.Upper.S, roi.Upper.V, roi.Upper.V);
-            //                double matchPct;
-            //                hsvService.DetectColor(roiBmp, lowerRange, upperRange, out matchPct);
-            //                int sc = (int)Math.Round(matchPct);
-            //                pass = EvaluateScore(roi, sc);
-            //            }
-            //            else
-            //            {
-            //                var algorithm = roi.Algorithm ?? BarcodeAlgorithm.QRCode;
-            //                string decoded = barcodeService.Decode(roiBmp, algorithm);
-
-            //                bool passLength = true;
-            //                if (roi.ExpectedLength > 0)
-            //                {
-            //                    passLength = decoded?.Length == roi.ExpectedLength;
-            //                }
-
-            //                bool ok = !string.IsNullOrWhiteSpace(decoded) && passLength;
-            //                int sc = ok ? 100 : 0;
-            //                pass = EvaluateScore(roi, sc);
-            //            }
-            //        }
-
-            //        _lastTestResults[(selectedFovIndex, i)] = pass;
-            //    }
-
-
-            //    _showRunResults = true;
-            //    _singleRoiMode = false;
-            //    selectedRoiIndex = -1;
-            //    pictureBox1.Invalidate();
         }
 
         private void btn_addfov_Click(object sender, EventArgs e)
@@ -1288,6 +1189,10 @@ namespace MPV
 
             pictureBox1.Invalidate();
         }
-        
+
+        private void saveToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 }

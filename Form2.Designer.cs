@@ -33,17 +33,19 @@
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.resetToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.textBox1 = new System.Windows.Forms.TextBox();
+            this.label2 = new System.Windows.Forms.Label();
+            this.lb_fail = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
             this.panel1 = new System.Windows.Forms.Panel();
-            this.lb_fail = new System.Windows.Forms.Label();
-            this.label2 = new System.Windows.Forms.Label();
-            this.textBox1 = new System.Windows.Forms.TextBox();
+            this.fileSystemWatcher1 = new System.IO.FileSystemWatcher();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
             this.splitContainer1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.ptr_image)).BeginInit();
             this.menuStrip1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.fileSystemWatcher1)).BeginInit();
             this.SuspendLayout();
             // 
             // splitContainer1
@@ -101,6 +103,34 @@
             this.resetToolStripMenuItem.Size = new System.Drawing.Size(102, 22);
             this.resetToolStripMenuItem.Text = "Reset";
             // 
+            // textBox1
+            // 
+            this.textBox1.Location = new System.Drawing.Point(67, 152);
+            this.textBox1.Name = "textBox1";
+            this.textBox1.ReadOnly = true;
+            this.textBox1.Size = new System.Drawing.Size(130, 20);
+            this.textBox1.TabIndex = 4;
+            // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label2.Location = new System.Drawing.Point(13, 157);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(26, 16);
+            this.label2.TabIndex = 3;
+            this.label2.Text = "SN";
+            // 
+            // lb_fail
+            // 
+            this.lb_fail.AutoSize = true;
+            this.lb_fail.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lb_fail.Location = new System.Drawing.Point(123, 122);
+            this.lb_fail.Name = "lb_fail";
+            this.lb_fail.Size = new System.Drawing.Size(29, 16);
+            this.lb_fail.TabIndex = 2;
+            this.lb_fail.Text = "Fail";
+            // 
             // label1
             // 
             this.label1.AutoSize = true;
@@ -119,33 +149,10 @@
             this.panel1.Size = new System.Drawing.Size(240, 109);
             this.panel1.TabIndex = 0;
             // 
-            // lb_fail
+            // fileSystemWatcher1
             // 
-            this.lb_fail.AutoSize = true;
-            this.lb_fail.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lb_fail.Location = new System.Drawing.Point(123, 122);
-            this.lb_fail.Name = "lb_fail";
-            this.lb_fail.Size = new System.Drawing.Size(29, 16);
-            this.lb_fail.TabIndex = 2;
-            this.lb_fail.Text = "Fail";
-            // 
-            // label2
-            // 
-            this.label2.AutoSize = true;
-            this.label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label2.Location = new System.Drawing.Point(13, 157);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(26, 16);
-            this.label2.TabIndex = 3;
-            this.label2.Text = "SN";
-            // 
-            // textBox1
-            // 
-            this.textBox1.Location = new System.Drawing.Point(67, 152);
-            this.textBox1.Name = "textBox1";
-            this.textBox1.ReadOnly = true;
-            this.textBox1.Size = new System.Drawing.Size(130, 20);
-            this.textBox1.TabIndex = 4;
+            this.fileSystemWatcher1.EnableRaisingEvents = true;
+            this.fileSystemWatcher1.SynchronizingObject = this;
             // 
             // lb_pass
             // 
@@ -166,6 +173,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.ptr_image)).EndInit();
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.fileSystemWatcher1)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -182,5 +190,6 @@
         private System.Windows.Forms.Label lb_fail;
         private System.Windows.Forms.TextBox textBox1;
         private System.Windows.Forms.Label label2;
+        private System.IO.FileSystemWatcher fileSystemWatcher1;
     }
 }
