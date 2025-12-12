@@ -19,6 +19,10 @@ namespace MPV.Models
         public int Height { get; set; }
         public bool IsHidden { get; set; } = false;
 
+        // Vị trí gốc để bù lệch từ Marking
+        public int BaseX { get; set; }
+        public int BaseY { get; set; }
+
         public int ExpectedLength { get; set; } = 0;
 
         public string Mode { get; set; } = "Barcode";

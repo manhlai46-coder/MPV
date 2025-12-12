@@ -85,6 +85,27 @@ namespace MPV.Renderers
 
             AddControlRow(root, CreateLabel("ROI"), roiGroup);
 
+            // type combobox
+            var cboType = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList };
+            cboType.Items.AddRange(new object[] { "Unknown", "Component", "Marking" });
+            cboType.SelectedItem = roi.Type ?? "Unknown";
+            cboType.SelectedIndexChanged += (s, e) =>
+            {
+                roi.Type = cboType.SelectedItem.ToString();
+                // Nếu là Marking: khởi tạo base và áp dụng bù lệch ngay
+                if (string.Equals(roi.Type, "Marking", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (roi.BaseX == 0 && roi.BaseY == 0)
+                    {
+                        roi.BaseX = roi.X;
+                        roi.BaseY = roi.Y;
+                    }
+                    ApplyMarkingOffset(roi);
+                }
+                SaveRoi();
+            };
+            AddControlRow(root, CreateLabel("Type"), cboType);
+
             var cboAlg = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList };
             cboAlg.Items.AddRange(new object[] { "Barcode", "HSV", "TemplateMatching" });
             string currentMode = roi.Mode;
@@ -254,6 +275,19 @@ namespace MPV.Renderers
             result.MinMaxLoc(out double _, out double maxVal, out _, out OpenCvSharp.Point maxLoc);
             roi.MatchScore = maxVal;
             roi.MatchRect = new Rectangle(maxLoc.X, maxLoc.Y, templ.Width, templ.Height);
+
+            // Nếu là Marking, cập nhật bù lệch cho các ROI khác
+            if (string.Equals(roi.Type, "Marking", StringComparison.OrdinalIgnoreCase))
+            {
+                // Cập nhật base nếu chưa có
+                if (roi.BaseX == 0 && roi.BaseY == 0)
+                {
+                    roi.BaseX = roi.X;
+                    roi.BaseY = roi.Y;
+                }
+                ApplyMarkingOffset(roi);
+            }
+
             SaveRoi();
         }
 
@@ -331,6 +365,34 @@ namespace MPV.Renderers
             {
                 RenderBarcodePanel(panel, roi);
             }
+        }
+
+        // Áp dụng bù lệch cho các ROI khác dựa trên Marking
+        private void ApplyMarkingOffset(RoiRegion marker)
+        {
+            int markerPosX = marker.MatchRect != Rectangle.Empty ? marker.MatchRect.X : marker.X;
+            int markerPosY = marker.MatchRect != Rectangle.Empty ? marker.MatchRect.Y : marker.Y;
+            int dx = markerPosX - marker.BaseX;
+            int dy = markerPosY - marker.BaseY;
+
+            foreach (var r in roiList)
+            {
+                if (ReferenceEquals(r, marker)) continue;
+                if (string.Equals(r.Type, "Marking", StringComparison.OrdinalIgnoreCase)) continue;
+
+                if (r.BaseX == 0 && r.BaseY == 0)
+                {
+                    r.BaseX = r.X;
+                    r.BaseY = r.Y;
+                }
+
+                r.X = r.BaseX + dx;
+                r.Y = r.BaseY + dy;
+            }
+
+            SaveRoi();
+            pictureBox.Invalidate();
+            RoiChanged?.Invoke();
         }
     }
 }

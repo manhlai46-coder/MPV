@@ -506,7 +506,11 @@ namespace MPV
             }
             else if (e.Node.Text.StartsWith("ROI "))
             {
+<<<<<<< HEAD
                 // when selecting ROI, show only that ROI
+=======
+                // Chỉ hiển thị ROI được chọn
+>>>>>>> 0c165c751373700576abac779002e026e8bf07d9
                 _singleRoiMode = true;
                 if (!int.TryParse(e.Node.Text.Replace("ROI ", ""), out int roiIndex)) return;
                 selectedRoiIndex = roiIndex - 1;
@@ -554,198 +558,20 @@ namespace MPV
                 }
                 pictureBox1.Invalidate();
             }
-        }
-
-        private void SyncTemplatePanel()
-        {
-            if (selectedRoiIndex < 0 || selectedRoiIndex >= roiList.Count)
-            {
-                txtOkLower.Text = ""; txtOkUpper.Text = ""; chkReverse.Checked = false; txtLastScore.Text = ""; txtCenterX.Text = ""; txtCenterY.Text = ""; ptr_template.Image = null; _hsvPanel.Visible = false; grpTemplate.Text = "Template"; btnUpdateTemplate.Enabled = false; btnUpdateTemplate.Text = "Update Template"; if (_barcodePanel != null) _barcodePanel.Visible = false;
-                // default show general controls when nothing selected
-                lblKRange.Visible = true; txtOkLower.Visible = true; txtOkUpper.Visible = true; chkReverse.Visible = true; lblScore.Visible = true; txtLastScore.Visible = true; lblCenter.Visible = true; txtCenterX.Visible = true; txtCenterY.Visible = true;
-                return;
-            }
-            var roi = roiList[selectedRoiIndex];
-            txtOkLower.Text = roi.OkScoreLower.ToString();
-            txtOkUpper.Text = roi.OkScoreUpper.ToString();
-            chkReverse.Checked = roi.ReverseSearch;
-            txtLastScore.Text = roi.LastScore.ToString();
-            txtCenterX.Text = roi.X.ToString();
-            txtCenterY.Text = roi.Y.ToString();
-
-            var isTemplate = string.Equals(roi.Mode, "Template Matching", StringComparison.OrdinalIgnoreCase) && roi.Template != null;
-            if (isTemplate)
-            {
-                grpTemplate.Text = "Template";
-                ptr_template.Visible = true;
-                ptr_template.Image = roi.Template;
-                btnUpdateTemplate.Enabled = true;
-                btnUpdateTemplate.Text = "Update Template";
-                _hsvPanel.Visible = false;
-                if (_barcodePanel != null) _barcodePanel.Visible = false;
-                // show general controls for template
-                lblKRange.Visible = true; txtOkLower.Visible = true; txtOkUpper.Visible = true; chkReverse.Visible = true; lblScore.Visible = true; txtLastScore.Visible = true; lblCenter.Visible = true; txtCenterX.Visible = true; txtCenterY.Visible = true;
-            }
-            else if (string.Equals(roi.Mode, "HSV", StringComparison.OrdinalIgnoreCase))
-            {
-                grpTemplate.Text = "HSV";
-                ptr_template.Visible = false;
-                ptr_template.Image = null;
-                _hsvPanel.Visible = true;
-                btnUpdateTemplate.Enabled = true; // use single button for HSV action
-                btnUpdateTemplate.Text = "Get HSV";
-                if (_barcodePanel != null) _barcodePanel.Visible = false;
-                UpdateHsvPanelValues(roi);
-                // show general controls for HSV
-                lblKRange.Visible = true; txtOkLower.Visible = true; txtOkUpper.Visible = true; chkReverse.Visible = true; lblScore.Visible = true; txtLastScore.Visible = true; lblCenter.Visible = true; txtCenterX.Visible = true; txtCenterY.Visible = true;
-            }
             else
             {
-                // Barcode mode
-                grpTemplate.Text = "Algorithm";
-                ptr_template.Visible = false;
-                ptr_template.Image = null;
-                _hsvPanel.Visible = false;
-                if (_barcodePanel != null)
+                // Các node khác: hiển thị tất cả ROI
+                _singleRoiMode = false;
+                if (e.Node.Text.StartsWith("ROI "))
                 {
-                    _barcodePanel.Visible = true;
-                    UpdateBarcodePanelValues(roi);
-                }
-                btnUpdateTemplate.Enabled = false;
-                btnUpdateTemplate.Text = "";
-                // hide unrelated controls for barcode
-                lblKRange.Visible = false; txtOkLower.Visible = false; txtOkUpper.Visible = false; chkReverse.Visible = false; lblScore.Visible = false; txtLastScore.Visible = false; lblCenter.Visible = false; txtCenterX.Visible = false; txtCenterY.Visible = false;
-            }
-        }
-
-        private void btnUpdateTemplate_Click(object sender, EventArgs e)
-        {
-            if (selectedRoiIndex < 0 || selectedRoiIndex >= roiList.Count) return;
-            var roi = roiList[selectedRoiIndex];
-
-            if (string.Equals(roi.Mode, "HSV", StringComparison.OrdinalIgnoreCase))
-            {
-                if (_bitmap == null) return;
-                Rectangle rect = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
-                rect.Intersect(new Rectangle(0,0,_bitmap.Width,_bitmap.Height));
-                if (rect.Width <=0 || rect.Height <=0) return;
-                using (var roiBmp = new Bitmap(rect.Width, rect.Height))
-                using (var g = Graphics.FromImage(roiBmp))
-                {
-                    g.DrawImage(_bitmap, new Rectangle(0, 0, rect.Width, rect.Height), rect, GraphicsUnit.Pixel);
-                    var (lower, upper, _) = hsvAutoService.Compute(roiBmp, 15, 10);
-                    roi.Lower = lower; roi.Upper = upper; fovManager.Save(fovList);
-                    UpdateHsvPanelValues(roi);
-                }
-                return;
-            }
-
-            // default: template update
-            if (_bitmap == null) return;
-            Rectangle rectT = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
-            rectT.Intersect(new Rectangle(0,0,_bitmap.Width,_bitmap.Height));
-            if (rectT.Width <=0 || rectT.Height <=0) return;
-            roi.Template?.Dispose();
-            Bitmap bmp = new Bitmap(rectT.Width, rectT.Height);
-            using (Graphics g = Graphics.FromImage(bmp))
-                g.DrawImage(_bitmap, new Rectangle(0,0,rectT.Width,rectT.Height), rectT, GraphicsUnit.Pixel);
-            roi.Template = bmp;
-            // Persist template as base64 so it survives restarts
-            roi.TemplateBase64 = BitmapToBase64Png(bmp);
-            roi.MatchScore = 0; roi.LastScore = 0; roi.MatchRect = Rectangle.Empty;
-            fovManager.Save(fovList);
-            SyncTemplatePanel();
-        }
-
-        private string BitmapToBase64Png(Bitmap bmp)
-        {
-            using (var ms = new MemoryStream())
-            {
-                bmp.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
-                return Convert.ToBase64String(ms.ToArray());
-            }
-        }
-        private Bitmap Base64ToBitmap(string base64)
-        {
-            var bytes = Convert.FromBase64String(base64);
-            using (var ms = new MemoryStream(bytes))
-            {
-                return new Bitmap(ms);
-            }
-        }
-
-        private void txtOkLower_TextChanged(object sender, EventArgs e)
-        {
-            if (selectedRoiIndex < 0 || selectedRoiIndex >= roiList.Count) return;
-            if (int.TryParse(txtOkLower.Text, out int v))
-            {
-                v = Math.Max(0, Math.Min(100, v));
-                roiList[selectedRoiIndex].OkScoreLower = v;
-                fovManager.Save(fovList);
-            }
-        }
-        private void txtOkUpper_TextChanged(object sender, EventArgs e)
-        {
-            if (selectedRoiIndex < 0 || selectedRoiIndex >= roiList.Count) return;
-            if (int.TryParse(txtOkUpper.Text, out int v))
-            {
-                v = Math.Max(0, Math.Min(100, v));
-                roiList[selectedRoiIndex].OkScoreUpper = v;
-                fovManager.Save(fovList);
-            }
-        }
-        private void chkReverse_CheckedChanged(object sender, EventArgs e)
-        {
-            if (selectedRoiIndex < 0 || selectedRoiIndex >= roiList.Count) return;
-            roiList[selectedRoiIndex].ReverseSearch = chkReverse.Checked;
-            fovManager.Save(fovList);
-        }
-
-        private bool EvaluateScore(RoiRegion roi, int score)
-        {
-            bool inRange = score >= roi.OkScoreLower && score <= roi.OkScoreUpper;
-            return roi.ReverseSearch ? !inRange : inRange;
-        }
-
-        // Template Matching helper: crop to ROI, grayscale, CCoeffNormed
-        private int RunTemplateMatching(RoiRegion roi, Bitmap fovBitmap, out Rectangle matchRect, out double matchScore)
-        {
-            matchRect = Rectangle.Empty;
-            matchScore = 0;
-            if (roi == null || roi.Template == null || fovBitmap == null) return 0;
-
-            var searchRect = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
-            var fovRect = new Rectangle(0, 0, fovBitmap.Width, fovBitmap.Height);
-            searchRect.Intersect(fovRect);
-            if (searchRect.Width <= 0 || searchRect.Height <= 0) return 0;
-
-            using (var searchBmp = new Bitmap(searchRect.Width, searchRect.Height))
-            using (var g = Graphics.FromImage(searchBmp))
-            {
-                g.DrawImage(fovBitmap, new Rectangle(0, 0, searchRect.Width, searchRect.Height), searchRect, GraphicsUnit.Pixel);
-
-                using (Mat img = BitmapConverter.ToMat(searchBmp))
-                using (Mat templ = BitmapConverter.ToMat(roi.Template))
-                using (Mat imgGray = new Mat())
-                using (Mat templGray = new Mat())
-                {
-                    if (img.Empty() || templ.Empty()) return 0;
-
-                    if (img.Channels() > 1)
-                        Cv2.CvtColor(img, imgGray, ColorConversionCodes.BGR2GRAY);
-                    else
-                        img.CopyTo(imgGray);
-
-                    if (templ.Channels() > 1)
-                        Cv2.CvtColor(templ, templGray, ColorConversionCodes.BGR2GRAY);
-                    else
-                        templ.CopyTo(templGray);
-
-                    if (imgGray.Width < templGray.Width || imgGray.Height < templGray.Height)
-                        return 0;
-
-                    using (Mat result = new Mat(imgGray.Rows - templGray.Rows + 1, imgGray.Cols - templGray.Cols + 1, MatType.CV_32FC1))
+                    if (!int.TryParse(e.Node.Text.Replace("ROI ", ""), out int roiIndex)) return;
+                    selectedRoiIndex = roiIndex - 1;
+                    if (selectedFovIndex >= 0 && selectedFovIndex < fovList.Count)
+                        roiList = fovList[selectedFovIndex].Rois;
+                    // Restore template for selected ROI if needed
+                    if (selectedRoiIndex >= 0 && selectedRoiIndex < roiList.Count)
                     {
+<<<<<<< HEAD
                         Cv2.MatchTemplate(imgGray, templGray, result, TemplateMatchModes.CCoeffNormed);
                         result.MinMaxLoc(out double _, out double maxVal, out _, out OpenCvSharp.Point maxLoc);
 
@@ -929,6 +755,46 @@ namespace MPV
                     }
 
                     //MessageBox.Show("Đã thêm FOV mới với ảnh: " + Path.GetFileName(ofd.FileName));
+=======
+                        var r = roiList[selectedRoiIndex];
+                        if (r.Template == null && !string.IsNullOrEmpty(r.TemplateBase64))
+                        {
+                            try { r.Template = Base64ToBitmap(r.TemplateBase64); } catch { }
+                        }
+                    }
+                    SyncTemplatePanel();
+
+                    // render ROI property panel into panelImage
+                    panelImage.Controls.Clear();
+                    if (selectedRoiIndex >= 0 && selectedRoiIndex < roiList.Count)
+                    {
+                        var propertyPanel = new RoiPropertyPanel(
+                            fovManager,
+                            fovList,
+                            pictureBox1,
+                            _bitmap,
+                            selectedFovIndex,
+                            selectedRoiIndex,
+                            roiList);
+                        propertyPanel.RoiChanged += () => 
+                        {
+                            var currentNode = pn_property.SelectedNode; // nhớ node đang chọn
+                            SyncTemplatePanel();
+                            if (currentNode != null)
+                            {
+                                try
+                                {
+                                    pn_property.SelectedNode = currentNode;
+                                    currentNode.EnsureVisible();
+                                    pn_property.Focus(); // ép TreeView lấy lại focus để không mất highlight
+                                }
+                                catch { }
+                            }
+                        }; // cập nhật panel trái khi thay đổi và giữ lựa chọn trên TreeView
+                        propertyPanel.ShowRoiProperties(panelImage, roiList[selectedRoiIndex]);
+                    }
+                    pictureBox1.Invalidate();
+>>>>>>> 0c165c751373700576abac779002e026e8bf07d9
                 }
             }
             
@@ -1189,10 +1055,464 @@ namespace MPV
 
             pictureBox1.Invalidate();
         }
+<<<<<<< HEAD
 
         private void saveToolStripMenuItem_Click(object sender, EventArgs e)
         {
 
+=======
+        
+        // helper to determine template mode with or without space
+        private bool IsTemplateMode(string mode)
+        {
+            if (string.IsNullOrEmpty(mode)) return false;
+            return string.Equals(mode, "Template Matching", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(mode, "TemplateMatching", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void SyncTemplatePanel()
+        {
+            if (selectedRoiIndex < 0 || selectedRoiIndex >= roiList.Count)
+            {
+                txtOkLower.Text = ""; txtOkUpper.Text = ""; chkReverse.Checked = false; txtLastScore.Text = ""; txtCenterX.Text = ""; txtCenterY.Text = ""; ptr_template.Image = null; _hsvPanel.Visible = false; grpTemplate.Text = "Template"; btnUpdateTemplate.Enabled = false; btnUpdateTemplate.Text = "Update Template"; if (_barcodePanel != null) _barcodePanel.Visible = false;
+                lblKRange.Visible = true; txtOkLower.Visible = true; txtOkUpper.Visible = true; chkReverse.Visible = true; lblScore.Visible = true; txtLastScore.Visible = true; lblCenter.Visible = true; txtCenterX.Visible = true; txtCenterY.Visible = true;
+                return;
+            }
+            var roi = roiList[selectedRoiIndex];
+            txtOkLower.Text = roi.OkScoreLower.ToString();
+            txtOkUpper.Text = roi.OkScoreUpper.ToString();
+            chkReverse.Checked = roi.ReverseSearch;
+            txtLastScore.Text = roi.LastScore.ToString();
+            txtCenterX.Text = roi.X.ToString();
+            txtCenterY.Text = roi.Y.ToString();
+
+            var isTemplateMode = IsTemplateMode(roi.Mode);
+            if (isTemplateMode)
+            {
+                grpTemplate.Text = "Template";
+                ptr_template.Visible = roi.Template != null;
+                ptr_template.Image = roi.Template;
+                btnUpdateTemplate.Enabled = true;
+                btnUpdateTemplate.Text = "Update Template";
+                _hsvPanel.Visible = false;
+                if (_barcodePanel != null) _barcodePanel.Visible = false;
+                lblKRange.Visible = true; txtOkLower.Visible = true; txtOkUpper.Visible = true; chkReverse.Visible = true; lblScore.Visible = true; txtLastScore.Visible = true; lblCenter.Visible = true; txtCenterX.Visible = true; txtCenterY.Visible = true;
+            }
+            else if (string.Equals(roi.Mode, "HSV", StringComparison.OrdinalIgnoreCase))
+            {
+                grpTemplate.Text = "HSV";
+                ptr_template.Visible = false;
+                ptr_template.Image = null;
+                _hsvPanel.Visible = true;
+                btnUpdateTemplate.Enabled = true; // use single button for HSV action
+                btnUpdateTemplate.Text = "Get HSV";
+                if (_barcodePanel != null) _barcodePanel.Visible = false;
+                UpdateHsvPanelValues(roi);
+                lblKRange.Visible = true; txtOkLower.Visible = true; txtOkUpper.Visible = true; chkReverse.Visible = true; lblScore.Visible = true; txtLastScore.Visible = true; lblCenter.Visible = true; txtCenterX.Visible = true; txtCenterY.Visible = true;
+            }
+            else
+            {
+                grpTemplate.Text = "Algorithm";
+                ptr_template.Visible = false;
+                ptr_template.Image = null;
+                _hsvPanel.Visible = false;
+                if (_barcodePanel != null)
+                {
+                    _barcodePanel.Visible = true;
+                    UpdateBarcodePanelValues(roi);
+                }
+                btnUpdateTemplate.Enabled = false;
+                btnUpdateTemplate.Text = "";
+                lblKRange.Visible = false; txtOkLower.Visible = false; txtOkUpper.Visible = false; chkReverse.Visible = false; lblScore.Visible = false; txtLastScore.Visible = false; lblCenter.Visible = false; txtCenterX.Visible = false; txtCenterY.Visible = false;
+            }
+        }
+
+        private void btnUpdateTemplate_Click(object sender, EventArgs e)
+        {
+            if (selectedRoiIndex < 0 || selectedRoiIndex >= roiList.Count) return;
+            var roi = roiList[selectedRoiIndex];
+
+            if (string.Equals(roi.Mode, "HSV", StringComparison.OrdinalIgnoreCase))
+            {
+                if (_bitmap == null) return;
+                Rectangle rect = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
+                rect.Intersect(new Rectangle(0,0,_bitmap.Width,_bitmap.Height));
+                if (rect.Width <=0 || rect.Height <=0) return;
+                using (var roiBmp = new Bitmap(rect.Width, rect.Height))
+                using (var g = Graphics.FromImage(roiBmp))
+                {
+                    g.DrawImage(_bitmap, new Rectangle(0, 0, rect.Width, rect.Height), rect, GraphicsUnit.Pixel);
+                    var (lower, upper, _) = hsvAutoService.Compute(roiBmp, 15, 10);
+                    roi.Lower = lower; roi.Upper = upper; fovManager.Save(fovList);
+                    UpdateHsvPanelValues(roi);
+                }
+                return;
+            }
+
+            if (_bitmap == null) return;
+            Rectangle rectT = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
+            rectT.Intersect(new Rectangle(0,0,_bitmap.Width,_bitmap.Height));
+            if (rectT.Width <=0 || rectT.Height <= 0) return;
+            roi.Template?.Dispose();
+            Bitmap bmp = new Bitmap(rectT.Width, rectT.Height);
+            using (Graphics g = Graphics.FromImage(bmp))
+                g.DrawImage(_bitmap, new Rectangle(0,0,rectT.Width,rectT.Height), rectT, GraphicsUnit.Pixel);
+            roi.Template = bmp;
+            roi.TemplateBase64 = BitmapToBase64Png(bmp);
+            roi.MatchScore = 0; roi.LastScore = 0; roi.MatchRect = Rectangle.Empty;
+            fovManager.Save(fovList);
+            SyncTemplatePanel();
+        }
+
+        private string BitmapToBase64Png(Bitmap bmp)
+        {
+            using (var ms = new MemoryStream())
+            {
+                bmp.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+                return Convert.ToBase64String(ms.ToArray());
+            }
+        }
+        private Bitmap Base64ToBitmap(string base64)
+        {
+            var bytes = Convert.FromBase64String(base64);
+            using (var ms = new MemoryStream(bytes))
+            {
+                return new Bitmap(ms);
+            }
+        }
+
+        private void txtOkLower_TextChanged(object sender, EventArgs e)
+        {
+            if (selectedRoiIndex < 0 || selectedRoiIndex >= roiList.Count) return;
+            if (int.TryParse(txtOkLower.Text, out int v))
+            {
+                v = Math.Max(0, Math.Min(100, v));
+                roiList[selectedRoiIndex].OkScoreLower = v;
+                fovManager.Save(fovList);
+            }
+        }
+        private void txtOkUpper_TextChanged(object sender, EventArgs e)
+        {
+            if (selectedRoiIndex < 0 || selectedRoiIndex >= roiList.Count) return;
+            if (int.TryParse(txtOkUpper.Text, out int v))
+            {
+                v = Math.Max(0, Math.Min(100, v));
+                roiList[selectedRoiIndex].OkScoreUpper = v;
+                fovManager.Save(fovList);
+            }
+        }
+        private void chkReverse_CheckedChanged(object sender, EventArgs e)
+        {
+            if (selectedRoiIndex < 0 || selectedRoiIndex >= roiList.Count) return;
+            roiList[selectedRoiIndex].ReverseSearch = chkReverse.Checked;
+            fovManager.Save(fovList);
+        }
+
+        private void exitToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var result = MessageBox.Show("You want to Exit", "OK", MessageBoxButtons.OKCancel);
+            if (result == DialogResult.OK)
+            {
+                Application.Exit();
+            }
+        }
+
+        private void ảutoRunToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (selectedFovIndex < 0 || selectedFovIndex >= fovList.Count)
+            {
+                MessageBox.Show("Hãy chọn FOV trước.");
+                return;
+            }
+
+            var fov = fovList[selectedFovIndex];
+            if (File.Exists(fov.ImagePath))
+            {
+                _bitmap = new Bitmap(fov.ImagePath);
+                try { fov.ImageBase64 = BitmapToBase64Png(_bitmap); fovManager.Save(fovList); } catch { }
+            }
+            else if (!string.IsNullOrEmpty(fov.ImageBase64))
+            {
+                try { _bitmap = Base64ToBitmap(fov.ImageBase64); }
+                catch { MessageBox.Show("Không thể đọc ảnh FOV từ base64."); return; }
+            }
+            else
+            {
+                MessageBox.Show("Không tìm thấy ảnh FOV.");
+                return;
+            }
+
+            pictureBox1.Image = _bitmap;
+            pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+            roiList = fov.Rois;
+            ResetZoom();
+
+            _lastTestResults.Clear();
+
+            for (int i = 0; i < roiList.Count; i++)
+            {
+                var roi = roiList[i];
+                if (roi.IsHidden) continue;
+
+                bool pass = false;
+                Rectangle rect = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
+                rect.Intersect(new Rectangle(0, 0, _bitmap.Width, _bitmap.Height));
+                if (rect.Width <= 0 || rect.Height <= 0)
+                {
+                    _lastTestResults[(selectedFovIndex, i)] = false;
+                    continue;
+                }
+
+                if (IsTemplateMode(roi.Mode) && roi.Template != null)
+                {
+                    Rectangle mrect; double mscore;
+                    int tscore = RunTemplateMatching(roi, _bitmap, out mrect, out mscore);
+                    roi.MatchRect = mrect; roi.MatchScore = mscore;
+                    pass = EvaluateScore(roi, tscore);
+                    _lastTestResults[(selectedFovIndex, i)] = pass;
+                    continue;
+                }
+
+                using (var roiBmp = new Bitmap(rect.Width, rect.Height))
+                using (var g = Graphics.FromImage(roiBmp))
+                {
+                    g.DrawImage(_bitmap, new Rectangle(0, 0, rect.Width, rect.Height), rect, GraphicsUnit.Pixel);
+                    if (string.Equals(roi.Mode, "HSV", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (roi.Lower == null || roi.Upper == null)
+                        {
+                            var (lowerAuto, upperAuto, stats) = hsvAutoService.Compute(roiBmp, 15, 10);
+                            roi.Lower = lowerAuto;
+                            roi.Upper = upperAuto;
+                        }
+                        var lowerRange = new HsvRange(roi.Lower.H, roi.Lower.H, roi.Lower.S, roi.Lower.S, roi.Lower.V, roi.Lower.V);
+                        var upperRange = new HsvRange(roi.Upper.H, roi.Upper.H, roi.Upper.S, roi.Upper.S, roi.Upper.V, roi.Upper.V);
+                        double matchPct;
+                        hsvService.DetectColor(roiBmp, lowerRange, upperRange, out matchPct);
+                        int sc = (int)Math.Round(matchPct);
+                        pass = EvaluateScore(roi, sc);
+                    }
+                    else
+                    {
+                        var algorithm = roi.Algorithm ?? BarcodeAlgorithm.QRCode;
+                        string decoded = barcodeService.Decode(roiBmp, algorithm);
+                        bool passLength = roi.ExpectedLength <= 0 || decoded?.Length == roi.ExpectedLength;
+                        bool ok = !string.IsNullOrWhiteSpace(decoded) && passLength;
+                        int sc = ok ? 100 : 0;
+                        pass = EvaluateScore(roi, sc);
+                    }
+                }
+
+                _lastTestResults[(selectedFovIndex, i)] = pass;
+            }
+
+            _showRunResults = true;
+            _singleRoiMode = false;
+            selectedRoiIndex = -1;
+            pictureBox1.Invalidate();
+        }
+
+        private bool EvaluateScore(RoiRegion roi, int score)
+        {
+            bool inRange = score >= roi.OkScoreLower && score <= roi.OkScoreUpper;
+            return roi.ReverseSearch ? !inRange : inRange;
+        }
+
+        private int RunTemplateMatching(RoiRegion roi, Bitmap fovBitmap, out Rectangle matchRect, out double matchScore)
+        {
+            matchRect = Rectangle.Empty;
+            matchScore = 0;
+            if (roi == null || roi.Template == null || fovBitmap == null) return 0;
+
+            var searchRect = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
+            var fovRect = new Rectangle(0, 0, fovBitmap.Width, fovBitmap.Height);
+            searchRect.Intersect(fovRect);
+            if (searchRect.Width <= 0 || searchRect.Height <= 0) return 0;
+
+            using (var searchBmp = new Bitmap(searchRect.Width, searchRect.Height))
+            using (var g = Graphics.FromImage(searchBmp))
+            {
+                g.DrawImage(fovBitmap, new Rectangle(0, 0, searchRect.Width, searchRect.Height), searchRect, GraphicsUnit.Pixel);
+
+                using (Mat img = BitmapConverter.ToMat(searchBmp))
+                using (Mat templ = BitmapConverter.ToMat(roi.Template))
+                using (Mat imgGray = new Mat())
+                using (Mat templGray = new Mat())
+                {
+                    if (img.Empty() || templ.Empty()) return 0;
+
+                    if (img.Channels() > 1)
+                        Cv2.CvtColor(img, imgGray, ColorConversionCodes.BGR2GRAY);
+                    else
+                        img.CopyTo(imgGray);
+
+                    if (templ.Channels() > 1)
+                        Cv2.CvtColor(templ, templGray, ColorConversionCodes.BGR2GRAY);
+                    else
+                        templ.CopyTo(templGray);
+
+                    if (imgGray.Width < templGray.Width || imgGray.Height < templGray.Height)
+                        return 0;
+
+                    using (Mat result = new Mat(imgGray.Rows - templGray.Rows + 1, imgGray.Cols - templGray.Cols + 1, MatType.CV_32FC1))
+                    {
+                        Cv2.MatchTemplate(imgGray, templGray, result, TemplateMatchModes.CCoeffNormed);
+                        result.MinMaxLoc(out double _, out double maxVal, out _, out OpenCvSharp.Point maxLoc);
+
+                        matchScore = maxVal;
+                        matchRect = new Rectangle(searchRect.X + maxLoc.X, searchRect.Y + maxLoc.Y, templGray.Width, templGray.Height);
+                        int scoreInt = (int)Math.Round(maxVal * 100.0);
+                        return scoreInt;
+                    }
+                }
+            }
+        }
+
+        private void btn_addfov_Click(object sender, EventArgs e)
+        {
+            using (var ofd = new OpenFileDialog())
+            {
+                ofd.Filter = "Image Files|*.png;*.jpg;*.jpeg;*.bmp";
+                if (ofd.ShowDialog() == DialogResult.OK)
+                {
+                    var newFov = new FovRegion
+                    {
+                        ImagePath = ofd.FileName,
+                        Rois = new List<RoiRegion>()
+                    };
+                    try
+                    {
+                        var bytes = File.ReadAllBytes(ofd.FileName);
+                        newFov.ImageBase64 = Convert.ToBase64String(bytes);
+                    }
+                    catch { }
+
+                    fovManager.Add(newFov);
+                    LoadFovToTreeView();
+
+                    fovList = fovManager.Load();
+                    selectedFovIndex = fovList.Count - 1;
+                    roiList = fovList[selectedFovIndex].Rois;
+
+                    if (File.Exists(ofd.FileName))
+                    {
+                        _bitmap = new Bitmap(ofd.FileName);
+                        pictureBox1.Image = _bitmap;
+                        pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+                        _showRoiOnImage = true;
+                        ResetZoom();
+                        pictureBox1.Invalidate();
+                    }
+                    else if (!string.IsNullOrEmpty(newFov.ImageBase64))
+                    {
+                        try
+                        {
+                            _bitmap = Base64ToBitmap(newFov.ImageBase64);
+                            pictureBox1.Image = _bitmap;
+                            pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+                            _showRoiOnImage = true;
+                            ResetZoom();
+                            pictureBox1.Invalidate();
+                        }
+                        catch { }
+                    }
+                }
+            }
+        }
+
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            if ((keyData & Keys.KeyCode) == Keys.F5)
+            {
+                TestSelectedRoi();
+                return true;
+            }
+            if (keyData == (Keys.Control | Keys.Add) || keyData == (Keys.Control | Keys.Oemplus))
+            {
+                ZoomIn();
+                return true;
+            }
+            if (keyData == (Keys.Control | Keys.Subtract) || keyData == (Keys.Control | Keys.OemMinus))
+            {
+                ZoomOut();
+                return true;
+            }
+            if (keyData == (Keys.Control | Keys.D0))
+            {
+                ResetZoom();
+                return true;
+            }
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
+
+        private void TestSelectedRoi()
+        {
+            if (selectedFovIndex < 0 || selectedFovIndex >= fovList.Count) { MessageBox.Show("Chưa chọn FOV hợp lệ."); return; }
+            if (selectedRoiIndex < 0 || selectedRoiIndex >= roiList.Count) { MessageBox.Show("Vui lòng chọn ROI cần test."); return; }
+            if (_bitmap == null)
+            {
+                var fov = fovList[selectedFovIndex];
+                if (File.Exists(fov.ImagePath))
+                {
+                    _bitmap = new Bitmap(fov.ImagePath);
+                    try { fov.ImageBase64 = BitmapToBase64Png(_bitmap); fovManager.Save(fovList); } catch { }
+                }
+                else if (!string.IsNullOrEmpty(fov.ImageBase64))
+                {
+                    try { _bitmap = Base64ToBitmap(fov.ImageBase64); }
+                    catch { MessageBox.Show("Không thể đọc ảnh FOV từ base64."); return; }
+                }
+                else
+                {
+                    MessageBox.Show("Không tìm thấy ảnh FOV.");
+                    return;
+                }
+                pictureBox1.Image = _bitmap; pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+            }
+            var roi = roiList[selectedRoiIndex];
+            if (roi.Template == null && !string.IsNullOrEmpty(roi.TemplateBase64))
+            {
+                try { roi.Template = Base64ToBitmap(roi.TemplateBase64); } catch { }
+            }
+            Rectangle rect = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
+            rect.Intersect(new Rectangle(0,0,_bitmap.Width,_bitmap.Height));
+            if (rect.Width <=0 || rect.Height <=0) { MessageBox.Show("ROI nằm ngoài ảnh."); return; }
+            int score = 0;
+            using (var roiBmp = new Bitmap(rect.Width, rect.Height))
+            using (var g = Graphics.FromImage(roiBmp))
+            {
+                g.DrawImage(_bitmap, new Rectangle(0,0,rect.Width,rect.Height), rect, GraphicsUnit.Pixel);
+                if (IsTemplateMode(roi.Mode) && roi.Template != null)
+                {
+                    Rectangle mrect; double mscore;
+                    score = RunTemplateMatching(roi, _bitmap, out mrect, out mscore);
+                    roi.MatchScore = mscore; roi.MatchRect = mrect;
+                }
+                else if (string.Equals(roi.Mode, "HSV", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (roi.Lower == null || roi.Upper == null)
+                    {
+                        var (lowerAuto, upperAuto, _) = hsvAutoService.Compute(roiBmp, 15, 10);
+                        roi.Lower = lowerAuto;
+                        roi.Upper = upperAuto;
+                    }
+                    var lowerRange = new HsvRange(roi.Lower.H, roi.Lower.H, roi.Lower.S, roi.Lower.S, roi.Lower.V, roi.Lower.V);
+                    var upperRange = new HsvRange(roi.Upper.H, roi.Upper.H, roi.Upper.S, roi.Upper.S, roi.Upper.V, roi.Upper.V);
+                    double matchPct;
+                    hsvService.DetectColor(roiBmp, lowerRange, upperRange, out matchPct);
+                    score = (int)Math.Round(matchPct);
+                }
+                else
+                {
+                    var algorithm = roi.Algorithm ?? BarcodeAlgorithm.QRCode; string decoded = barcodeService.Decode(roiBmp, algorithm);
+                    bool ok = !string.IsNullOrWhiteSpace(decoded) && (roi.ExpectedLength <=0 || decoded.Length == roi.ExpectedLength);
+                    score = ok ? 100 : 0;
+                }
+            }
+            roi.LastScore = score; fovManager.Save(fovList); SyncTemplatePanel();
+            bool pass = EvaluateScore(roi, score);
+            MessageBox.Show($"Score: {score} - {(pass ? "PASS" : "FAIL")}");
+>>>>>>> 0c165c751373700576abac779002e026e8bf07d9
         }
     }
 }
