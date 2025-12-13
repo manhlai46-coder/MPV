@@ -23,6 +23,7 @@ namespace MPV
         private int _numfail;
         private List<FovRegion> _fovs = new List<FovRegion>();
         private FovManager _fovManager;
+        private bool _lastAllPass; // track last overall result
 
         // services for evaluation
         private readonly BarcodeService _barcodeService;
@@ -42,6 +43,23 @@ namespace MPV
 
             _barcodeService = new BarcodeService();
             _hsvService = new HsvService();
+
+            // Ensure the PTR image scales with the window
+            try
+            {
+                if (ptr_image != null)
+                {
+                    ptr_image.SizeMode = PictureBoxSizeMode.Zoom;
+                    ptr_image.Dock = DockStyle.Fill;
+                }
+                // Redraw PASS/FAIL text when panel resizes
+                if (panel1 != null)
+                {
+                    panel1.Resize += (s, e) => panel1.Invalidate();
+                    panel1.Paint += panel1_Paint;
+                }
+            }
+            catch { }
         }
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
@@ -66,6 +84,17 @@ namespace MPV
         {
             try { _fovs = _fovManager != null ? _fovManager.Load() : new List<FovRegion>(); } catch { _fovs = new List<FovRegion>(); }
 
+            // Ensure ptr_image still fills in case designer overrides
+            try
+            {
+                if (ptr_image != null)
+                {
+                    ptr_image.SizeMode = PictureBoxSizeMode.Zoom;
+                    ptr_image.Dock = DockStyle.Fill;
+                }
+            }
+            catch { }
+
             // Run autorun on load so the form behaves the same as clicking the Auto Run menu
             try
             {
@@ -88,8 +117,24 @@ namespace MPV
             _numfail = 0;
             label1.Text = "Pass";
             lb_fail.Text = "Fail";
-            panel1.BackColor = SystemColors.Control;
-            ptr_image.Image = null;
+            _lastAllPass = false;
+            panel1.Invalidate();
+       
+        }
+
+        private void panel1_Paint(object sender, PaintEventArgs e)
+        {
+            // draw centered PASS/FAIL text on panel1
+            string text = panel1.BackColor == Color.Green ? "PASS" : (panel1.BackColor == Color.Red ? "FAIL" : "");
+            if (string.IsNullOrEmpty(text)) return;
+            using (var f = new Font("Segoe UI", 16f, FontStyle.Bold))
+            using (var b = new SolidBrush(Color.White))
+            {
+                var size = e.Graphics.MeasureString(text, f);
+                float x = (panel1.ClientSize.Width - size.Width) / 2f;
+                float y = (panel1.ClientSize.Height - size.Height) / 2f;
+                e.Graphics.DrawString(text, f, b, x, y);
+            }
         }
 
         private Bitmap LoadFovBitmap(FovRegion fov)
@@ -310,6 +355,8 @@ namespace MPV
             if (_fovs == null || _fovs.Count == 0)
             {
                 panel1.BackColor = Color.Red;
+                _lastAllPass = false;
+                panel1.Invalidate();
                 _numfail++;
                 lb_fail.Text = $"Fail: {_numfail}";
                 return;
@@ -405,18 +452,18 @@ namespace MPV
                 if (!fovPass) allFovsPass = false;
             }
 
+            _lastAllPass = allFovsPass;
             if (allFovsPass)
             {
                 panel1.BackColor = Color.Green;
-                _numpass++;
-                label1.Text = $"Pass: {_numpass}";
+                label1.Text = $"Pass: {++_numpass}";
             }
             else
             {
                 panel1.BackColor = Color.Red;
-                _numfail++;
-                lb_fail.Text = $"Fail: {_numfail}";
+                lb_fail.Text = $"Fail: {++_numfail}";
             }
+            panel1.Invalidate();
 
             // Save results back so DrawVerticalSplits can use LastScore
             try { _fovManager.Save(_fovs); } catch { }

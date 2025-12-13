@@ -106,7 +106,7 @@
             // 
             // textBox1
             // 
-            this.textBox1.Location = new System.Drawing.Point(67, 152);
+            this.textBox1.Location = new System.Drawing.Point(50, 310);
             this.textBox1.Name = "textBox1";
             this.textBox1.ReadOnly = true;
             this.textBox1.Size = new System.Drawing.Size(130, 20);
@@ -116,7 +116,7 @@
             // 
             this.label2.AutoSize = true;
             this.label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label2.Location = new System.Drawing.Point(13, 157);
+            this.label2.Location = new System.Drawing.Point(3, 314);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(26, 16);
             this.label2.TabIndex = 3;
@@ -126,7 +126,7 @@
             // 
             this.lb_fail.AutoSize = true;
             this.lb_fail.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lb_fail.Location = new System.Drawing.Point(123, 122);
+            this.lb_fail.Location = new System.Drawing.Point(129, 266);
             this.lb_fail.Name = "lb_fail";
             this.lb_fail.Size = new System.Drawing.Size(29, 16);
             this.lb_fail.TabIndex = 2;
@@ -136,7 +136,7 @@
             // 
             this.label1.AutoSize = true;
             this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label1.Location = new System.Drawing.Point(13, 122);
+            this.label1.Location = new System.Drawing.Point(3, 266);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(38, 16);
             this.label1.TabIndex = 1;
@@ -147,7 +147,7 @@
             this.panel1.Dock = System.Windows.Forms.DockStyle.Top;
             this.panel1.Location = new System.Drawing.Point(0, 0);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(240, 109);
+            this.panel1.Size = new System.Drawing.Size(240, 240);
             this.panel1.TabIndex = 0;
             // 
             // fileSystemWatcher1
