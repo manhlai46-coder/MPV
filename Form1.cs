@@ -62,6 +62,7 @@ namespace MPV
         private MindVisionCamera _cam2 = new MindVisionCamera();
 
         private Bitmap _cur;
+        private bool _isCapturing = false;
         //AppDomain.CurrentDomain
         public Form1()
         {
@@ -532,18 +533,7 @@ namespace MPV
                 if (selectedFovIndex >= 0 && selectedFovIndex < fovList.Count)
                 {
                     var fpp = new MPV.Renderers.FovPropertyPanel(fovManager, fovList, selectedFovIndex);
-                    fpp.CaptureRequested += (camMode) =>
-                    {
-                        var _cam = camMode == "Camera2" ? _cam2 : _cam1;
-                        var currentFov = fovList[selectedFovIndex];
-                        var exposureUs = Math.Max(0, currentFov.ExposureTime);
-                        _cam.SetExposureTime(exposureUs);
-                        var bmp = _cam.GrabFrame(exposureUs);
-                        if (bmp == null) return;
-                        _cur?.Dispose();
-                        _cur = bmp;
-                        pictureBox1.Image = _cur;
-                    };
+                    fpp.CaptureRequested += (camMode) => { CaptureImage(camMode); };
                     fpp.ShowFovProperties(panelImage, fovList[selectedFovIndex]);
                 }
                 pictureBox1.Invalidate();
@@ -1222,6 +1212,49 @@ namespace MPV
             roi.LastScore = score; fovManager.Save(fovList); SyncTemplatePanel();
             bool pass = EvaluateScore(roi, score);
             MessageBox.Show($"Score: {score} - {(pass ? "PASS" : "FAIL")}");
+        }
+
+        private void CaptureImage(string camMode)
+        {
+            if (_isCapturing) return;
+
+            try
+            {
+                _isCapturing = true;
+
+                var _cam = camMode == "Camera1" ? _cam1 : _cam2;
+                if (_cam == null) return;
+
+                if (selectedFovIndex < 0 || selectedFovIndex >= fovList.Count) return;
+                var currentFov = fovList[selectedFovIndex];
+                var exposureUs = Math.Max(0, currentFov.ExposureTime);
+
+                _cam.SetExposureTime(exposureUs);
+                // intellisense: give camera a bit to apply if needed
+                // System.Threading.Thread.Sleep(10);
+
+                int safeTimeout = (int)(exposureUs / 1000) + 1500;
+
+                var bmp = _cam.GrabFrame(safeTimeout);
+                if (bmp == null) return;
+
+                var oldImage = pictureBox1.Image;
+                pictureBox1.Image = bmp;
+                _cur = bmp;
+
+                if (oldImage != null && oldImage != bmp)
+                {
+                    oldImage.Dispose();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Lỗi chụp ảnh: " + ex.Message);
+            }
+            finally
+            {
+                _isCapturing = false;
+            }
         }
     }
 }

@@ -516,12 +516,38 @@
   {
     "Id": 0,
     "Name": null,
-    "IsEnabled": true,
-    "CameraMode": "Camera1",
+    "IsEnabled": false,
+    "CameraMode": "Camera2",
     "ExposureTime": 10000,
     "ImagePath": "",
     "ImageBase64": "",
-    "Rois": [],
+    "Rois": [
+      {
+        "Id": 1,
+        "Name": "SMD_001",
+        "IsEnabled": true,
+        "Type": "Unknown",
+        "X": 0,
+        "Y": 0,
+        "Width": 0,
+        "Height": 0,
+        "IsHidden": false,
+        "BaseX": 0,
+        "BaseY": 0,
+        "ExpectedLength": 0,
+        "Mode": "Barcode",
+        "Algorithm": 0,
+        "Lower": null,
+        "Upper": null,
+        "TemplateBase64": null,
+        "MatchScore": 0.0,
+        "OkScoreLower": 80,
+        "OkScoreUpper": 100,
+        "ReverseSearch": false,
+        "LastScore": 0,
+        "OkScore": 80
+      }
+    ],
     "IsHidden": false
   }
 ]
