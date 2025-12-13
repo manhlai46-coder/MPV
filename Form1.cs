@@ -1223,29 +1223,37 @@ namespace MPV
                 _isCapturing = true;
 
                 var _cam = camMode == "Camera1" ? _cam1 : _cam2;
-                if (_cam == null) return;
-
+                if (_cam == null || !_cam.IsConnected) return;
                 if (selectedFovIndex < 0 || selectedFovIndex >= fovList.Count) return;
+
+                // 1) Set exposure from FOV textbox (ms -> µs)
                 var currentFov = fovList[selectedFovIndex];
-                var exposureUs = Math.Max(0, currentFov.ExposureTime);
-
+                int exposureMs = Math.Max(0, currentFov.ExposureTime);
+                int exposureUs = exposureMs * 1000;
                 _cam.SetExposureTime(exposureUs);
-                // intellisense: give camera a bit to apply if needed
-                // System.Threading.Thread.Sleep(10);
 
-                int safeTimeout = (int)(exposureUs / 1000) + 1500;
+                // Optional: set analog gain if SDK có hàm
+                // _cam.SetAnalogGain(50); // ví dụ
 
+                // 2) Cho camera thời gian áp dụng cấu hình
+                System.Threading.Thread.Sleep(50);
+
+                // 3) Chụp ảnh với timeout an toàn (>= exposureMs + 1500, tối thiểu 5000)
+                int safeTimeout = Math.Max(5000, exposureMs + 1500);
                 var bmp = _cam.GrabFrame(safeTimeout);
                 if (bmp == null) return;
 
+                // 4) Cập nhật UI + persist vào FOV
                 var oldImage = pictureBox1.Image;
-                pictureBox1.Image = bmp;
+                _bitmap = bmp;
+                pictureBox1.Image = _bitmap;
                 _cur = bmp;
+                if (oldImage != null && oldImage != bmp) { oldImage.Dispose(); }
 
-                if (oldImage != null && oldImage != bmp)
-                {
-                    oldImage.Dispose();
-                }
+                var fov = fovList[selectedFovIndex];
+                fov.ImagePath = string.Empty;
+                try { fov.ImageBase64 = BitmapToBase64Png(bmp); } catch { }
+                fovManager.Save(fovList);
             }
             catch (Exception ex)
             {
