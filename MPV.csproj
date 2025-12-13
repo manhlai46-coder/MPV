@@ -123,6 +123,7 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Models\RoiRegion.cs" />
+    <Compile Include="Renderers\FovPropertyPanel.cs" />
     <Compile Include="Renderers\RoiPropertyPanel.cs" />
     <Compile Include="Renderers\RoiRenderers.cs" />
     <Compile Include="Services\HsvAutoService.cs" />

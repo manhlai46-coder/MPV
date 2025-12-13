@@ -1,6 +1,5 @@
 ﻿using Cong1;
 using MPV.Enums;
-using MPV.Enums;
 using MPV.Models;
 using MPV.Renderers;
 using MPV.Service;
@@ -529,6 +528,24 @@ namespace MPV
                 selectedRoiIndex = -1;
                 SyncTemplatePanel();
                 panelImage.Controls.Clear();
+                // render FOV property panel
+                if (selectedFovIndex >= 0 && selectedFovIndex < fovList.Count)
+                {
+                    var fpp = new MPV.Renderers.FovPropertyPanel(fovManager, fovList, selectedFovIndex);
+                    fpp.CaptureRequested += (camMode) =>
+                    {
+                        var _cam = camMode == "Camera2" ? _cam2 : _cam1;
+                        var currentFov = fovList[selectedFovIndex];
+                        var exposureUs = Math.Max(0, currentFov.ExposureTime);
+                        _cam.SetExposureTime(exposureUs);
+                        var bmp = _cam.GrabFrame(exposureUs);
+                        if (bmp == null) return;
+                        _cur?.Dispose();
+                        _cur = bmp;
+                        pictureBox1.Image = _cur;
+                    };
+                    fpp.ShowFovProperties(panelImage, fovList[selectedFovIndex]);
+                }
                 pictureBox1.Invalidate();
             }
             else if (e.Node.Text.StartsWith("ROI "))
@@ -1092,54 +1109,25 @@ namespace MPV
 
         private void btn_addfov_Click(object sender, EventArgs e)
         {
-            using (var ofd = new OpenFileDialog())
+            // Add a new empty FOV (no OpenFileDialog)
+            var newFov = new FovRegion
             {
-                ofd.Filter = "Image Files|*.png;*.jpg;*.jpeg;*.bmp";
-                if (ofd.ShowDialog() == DialogResult.OK)
-                {
-                    var newFov = new FovRegion
-                    {
-                        ImagePath = ofd.FileName,
-                        Rois = new List<RoiRegion>()
-                    };
-                    try
-                    {
-                        var bytes = File.ReadAllBytes(ofd.FileName);
-                        newFov.ImageBase64 = Convert.ToBase64String(bytes);
-                    }
-                    catch { }
+                ImagePath = string.Empty,
+                ImageBase64 = string.Empty,
+                Rois = new List<RoiRegion>()
+            };
 
-                    fovManager.Add(newFov);
-                    LoadFovToTreeView();
+            fovManager.Add(newFov);
+            LoadFovToTreeView();
 
-                    fovList = fovManager.Load();
-                    selectedFovIndex = fovList.Count - 1;
-                    roiList = fovList[selectedFovIndex].Rois;
+            fovList = fovManager.Load();
+            selectedFovIndex = fovList.Count - 1;
+            roiList = fovList[selectedFovIndex].Rois;
 
-                    if (File.Exists(ofd.FileName))
-                    {
-                        _bitmap = new Bitmap(ofd.FileName);
-                        pictureBox1.Image = _bitmap;
-                        pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
-                        _showRoiOnImage = true;
-                        ResetZoom();
-                        pictureBox1.Invalidate();
-                    }
-                    else if (!string.IsNullOrEmpty(newFov.ImageBase64))
-                    {
-                        try
-                        {
-                            _bitmap = Base64ToBitmap(newFov.ImageBase64);
-                            pictureBox1.Image = _bitmap;
-                            pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
-                            _showRoiOnImage = true;
-                            ResetZoom();
-                            pictureBox1.Invalidate();
-                        }
-                        catch { }
-                    }
-                }
-            }
+            // No image loaded for empty FOV; clear current image view
+            _bitmap = null;
+            pictureBox1.Image = null;
+            pictureBox1.Invalidate();
         }
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)

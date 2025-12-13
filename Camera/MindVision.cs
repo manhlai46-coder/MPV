@@ -324,6 +324,20 @@ namespace Cong1
             }
         }
 
+        public int SetExposureTime(int microseconds)
+        {
+            try
+            {
+                if (m_hCamera <= 0) return -1;
+                if (microseconds < 0) microseconds = 0;
+                // Turn off auto exposure to allow manual control
+                try { MvApi.CameraSetAeState(m_hCamera, 0); } catch { }
+                var st = MvApi.CameraSetExposureTime(m_hCamera, (double)microseconds);
+                return st == CameraSdkStatus.CAMERA_STATUS_SUCCESS ? 1 : 0;
+            }
+            catch { return -1; }
+        }
+
         // ===== Nội bộ =====
 
         private CameraHandle FindAndInitDevice(string userDefinedName)
