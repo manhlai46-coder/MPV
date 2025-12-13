@@ -28,7 +28,7 @@ namespace Cong1
         private Thread m_tCaptureThread;
         private volatile bool m_bExitCaptureThread = false;
 
-        private readonly object _lockObj = new();
+        private readonly object _lockObj = new object();
 
         private string _userDefinedName = string.Empty;
         private bool _isConnected = false;
