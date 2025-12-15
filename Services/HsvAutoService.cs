@@ -21,7 +21,7 @@ namespace MPV.Services
         /// <summary>
         /// Compute HSV statistics and derive Lower/Upper thresholds from pixel distribution.
         /// Strategy:
-        ///  - H: use average hue with +/- huePadding (e.g., H=100 -> lower=85, upper=115 when huePadding=15)
+        ///  - H: use min/max with +/- huePadding to include the whole ROI hue span
         ///  - S,V: use min/max with optional svPadding.
         /// </summary>
         public (HsvValue lower, HsvValue upper, HsvStats stats) Compute(Bitmap roiBitmap, int huePadding = 0, int svPadding = 0)
@@ -29,7 +29,7 @@ namespace MPV.Services
             var stats = new HsvStats();
 
             if (roiBitmap == null)
-                return (new HsvValue(0,0,0), new HsvValue(0,0,0), stats);
+                return (new HsvValue(0, 0, 0), new HsvValue(0, 0, 0), stats);
 
             for (int y = 0; y < roiBitmap.Height; y++)
             {
@@ -52,10 +52,9 @@ namespace MPV.Services
                 }
             }
 
-            // Center H bounds around average hue with +/- huePadding.
-            int avgH = (int)Math.Round(stats.AvgH);
-            int lowerH = Clamp(avgH - huePadding, 0, 179);
-            int upperH = Clamp(avgH + huePadding, 0, 179);
+            // Use min/max for H to cover full hue span in ROI
+            int lowerH = Clamp(stats.MinH - huePadding, 0, 179);
+            int upperH = Clamp(stats.MaxH + huePadding, 0, 179);
 
             // Keep S,V using observed min/max with padding.
             int lowerS = Clamp(stats.MinS - svPadding, 0, 255);

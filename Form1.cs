@@ -487,38 +487,12 @@ namespace MPV
                         pictureBox1.Image = _bitmap;
                         ResetZoom();
                         roiList = fov.Rois;
-                        // Restore Template bitmap from persisted base64 for all ROIs
                         foreach (var roi in roiList)
                         {
-                            if (roi.Template == null && !string.IsNullOrEmpty(roi.TemplateBase64))
+                            if (roi.Template == null /* && !string.IsNullOrEmpty(roi.TemplateBase64) */)
                             {
-                                try
-                                {
-                                    roi.Template = Base64ToBitmap(roi.TemplateBase64);
-                                }
-                                catch { }
+                                // No longer restoring from base64; keep Template runtime-only
                             }
-                        }
-                        // Ensure FOV image is also persisted as base64
-                        try
-                        {
-                            fov.ImageBase64 = BitmapToBase64Png(_bitmap);
-                            fovManager.Save(fovList);
-                        }
-                        catch { }
-                    }
-                    else if (!string.IsNullOrEmpty(fov.ImageBase64))
-                    {
-                        try
-                        {
-                            _bitmap = Base64ToBitmap(fov.ImageBase64);
-                            pictureBox1.Image = _bitmap;
-                            ResetZoom();
-                            roiList = fov.Rois;
-                        }
-                        catch
-                        {
-                            pictureBox1.Image = null; _bitmap = null; roiList = new List<RoiRegion>();
                         }
                     }
                     else
@@ -550,9 +524,9 @@ namespace MPV
                 if (selectedRoiIndex >= 0 && selectedRoiIndex < roiList.Count)
                 {
                     var r = roiList[selectedRoiIndex];
-                    if (r.Template == null && !string.IsNullOrEmpty(r.TemplateBase64))
+                    if (r.Template == null /* && !string.IsNullOrEmpty(r.TemplateBase64) */)
                     {
-                        try { r.Template = Base64ToBitmap(r.TemplateBase64); } catch { }
+                        // runtime only
                     }
                 }
                 SyncTemplatePanel();
@@ -602,9 +576,9 @@ namespace MPV
                     if (selectedRoiIndex >= 0 && selectedRoiIndex < roiList.Count)
                     {
                         var r = roiList[selectedRoiIndex];
-                        if (r.Template == null && !string.IsNullOrEmpty(r.TemplateBase64))
+                        if (r.Template == null /* && !string.IsNullOrEmpty(r.TemplateBase64) */)
                         {
-                            try { r.Template = Base64ToBitmap(r.TemplateBase64); } catch { }
+                            // runtime only
                         }
                     }
                 }
@@ -872,12 +846,70 @@ namespace MPV
         {
             try
             {
-                fovManager.Save(fovList);
-                MessageBox.Show("Đã lưu cấu hình.");
+                string originalPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "fov_data.json");
+                string tempPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "fov_data.tmp.json");
+                try { FovManager tmpMgr = new FovManager(tempPath); tmpMgr.Save(fovList); } catch { }
+
+                while (true)
+                {
+                    using (Form dlg = new Form())
+                    {
+                        dlg.Text = "Xác thực để lưu";
+                        dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
+                        dlg.StartPosition = FormStartPosition.CenterParent;
+                        dlg.MinimizeBox = false;
+                        dlg.MaximizeBox = false;
+                        dlg.Width = 360;
+                        dlg.Height = 200;
+
+                        var lblUser = new Label { Left = 16, Top = 20, Width = 100, Text = "Tài khoản:" };
+                        var txtUser = new TextBox { Left = 120, Top = 16, Width = 200 };
+                        var lblPass = new Label { Left = 16, Top = 60, Width = 100, Text = "Mật khẩu:" };
+                        var txtPass = new TextBox { Left = 120, Top = 56, Width = 200, UseSystemPasswordChar = true };
+                        var btnOk = new Button { Left = 120, Top = 100, Width = 90, Text = "OK", DialogResult = DialogResult.OK };
+                        var btnCancel = new Button { Left = 230, Top = 100, Width = 90, Text = "Hủy", DialogResult = DialogResult.Cancel };
+                        dlg.AcceptButton = btnOk; dlg.CancelButton = btnCancel;
+
+                        dlg.Controls.Add(lblUser); dlg.Controls.Add(txtUser);
+                        dlg.Controls.Add(lblPass); dlg.Controls.Add(txtPass);
+                        dlg.Controls.Add(btnOk); dlg.Controls.Add(btnCancel);
+
+                        var result = dlg.ShowDialog(this);
+                        if (result == DialogResult.Cancel)
+                        {
+                            // user chose to cancel; do nothing and exit without saving
+                            return;
+                        }
+
+                        bool authenticated = ValidateCredentials(txtUser.Text, txtPass.Text);
+                        if (authenticated)
+                        {
+                            try
+                            {
+                                if (File.Exists(tempPath))
+                                {
+                                    File.Copy(tempPath, originalPath, true);
+                                }
+                                MessageBox.Show("Đã lưu cấu hình.");
+                            }
+                            catch (Exception ex)
+                            {
+                                MessageBox.Show("Không thể ghi đè file gốc: " + ex.Message);
+                            }
+                            return;
+                        }
+                        // If not authenticated: loop and prompt again without notifying
+                    }
+                }
             }
             catch { }
         }
-        
+
+        private bool ValidateCredentials(string user, string pass)
+        {
+            return string.Equals(user, "admin", StringComparison.OrdinalIgnoreCase)
+                && string.Equals(pass, "admin");
+        }
         
         // helper to determine template mode with or without space
         private bool IsTemplateMode(string mode)
@@ -975,7 +1007,7 @@ namespace MPV
             using (Graphics g = Graphics.FromImage(bmp))
                 g.DrawImage(_bitmap, new Rectangle(0,0,rectT.Width,rectT.Height), rectT, GraphicsUnit.Pixel);
             roi.Template = bmp;
-            roi.TemplateBase64 = BitmapToBase64Png(bmp);
+            // roi.TemplateBase64 = BitmapToBase64Png(bmp);
             roi.MatchScore = 0; roi.LastScore = 0; roi.MatchRect = Rectangle.Empty;
             fovManager.Save(fovList);
             SyncTemplatePanel();
@@ -1142,6 +1174,11 @@ namespace MPV
                 ResetZoom();
                 return true;
             }
+            if (keyData == (Keys.Control | Keys.S))
+            {
+                saveToolStripMenuItem_Click(this, EventArgs.Empty);
+                return true;
+            }
             return base.ProcessCmdKey(ref msg, keyData);
         }
 
@@ -1157,22 +1194,12 @@ namespace MPV
                     _bitmap = new Bitmap(fov.ImagePath);
                     try { fov.ImageBase64 = BitmapToBase64Png(_bitmap); fovManager.Save(fovList); } catch { }
                 }
-                else if (!string.IsNullOrEmpty(fov.ImageBase64))
-                {
-                    try { _bitmap = Base64ToBitmap(fov.ImageBase64); }
-                    catch { MessageBox.Show("Không thể đọc ảnh FOV từ base64."); return; }
-                }
-                else
-                {
-                    MessageBox.Show("Không tìm thấy ảnh FOV.");
-                    return;
-                }
                 pictureBox1.Image = _bitmap; pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
             }
             var roi = roiList[selectedRoiIndex];
-            if (roi.Template == null && !string.IsNullOrEmpty(roi.TemplateBase64))
+            if (roi.Template == null /* && !string.IsNullOrEmpty(roi.TemplateBase64) */)
             {
-                try { roi.Template = Base64ToBitmap(roi.TemplateBase64); } catch { }
+                // runtime only
             }
             Rectangle rect = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
             rect.Intersect(new Rectangle(0,0,_bitmap.Width,_bitmap.Height));
@@ -1272,8 +1299,8 @@ namespace MPV
                 ResetZoom();
 
                 var fov = fovList[selectedFovIndex];
-                fov.ImagePath = string.Empty;
-                try { fov.ImageBase64 = BitmapToBase64Png(bmp); } catch { }
+                // fov.ImagePath = string.Empty;
+                // try { fov.ImageBase64 = BitmapToBase64Png(bmp); } catch { }
                 fovManager.Save(fovList);
             }
             catch (Exception ex)

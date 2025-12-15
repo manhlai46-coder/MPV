@@ -13,57 +13,81 @@ namespace MPV.Services
         /// </summary>
         public bool DetectColor(Bitmap image, HsvRange lower, HsvRange upper, out double matchPercentage)
         {
+            matchPercentage = 0;
             if (image == null || lower == null || upper == null)
             {
-                matchPercentage = 0;
                 return false;
             }
 
-            int matchCount = 0;
-            int totalPixels = image.Width * image.Height;
-
-            // Lock bitmap ?? truy c?p nhanh
-            BitmapData bmpData = image.LockBits(
-                new Rectangle(0, 0, image.Width, image.Height),
-                ImageLockMode.ReadOnly,
-                PixelFormat.Format24bppRgb);
-
+            Bitmap src = image;
+            bool created = false;
             try
             {
-                IntPtr ptr = bmpData.Scan0;
-                int bytes = Math.Abs(bmpData.Stride) * image.Height;
-                byte[] rgbValues = new byte[bytes];
-                Marshal.Copy(ptr, rgbValues, 0, bytes);
-
-                for (int y = 0; y < image.Height; y++)
+                // Ensure 24bpp for consistent stride and channel order (BGR)
+                if (src.PixelFormat != PixelFormat.Format24bppRgb)
                 {
-                    for (int x = 0; x < image.Width; x++)
+                    var clone = new Bitmap(src.Width, src.Height, PixelFormat.Format24bppRgb);
+                    using (var g = Graphics.FromImage(clone))
                     {
-                        int index = y * bmpData.Stride + x * 3;
-                        byte b = rgbValues[index];
-                        byte g = rgbValues[index + 1];
-                        byte r = rgbValues[index + 2];
+                        g.DrawImage(src, new Rectangle(0, 0, clone.Width, clone.Height));
+                    }
+                    src = clone;
+                    created = true;
+                }
 
-                        // Convert RGB to HSV
-                        var hsv = RgbToHsv(r, g, b);
+                int matchCount = 0;
+                int totalPixels = src.Width * src.Height;
 
-                        // Check if in range
-                        if (IsInRange(hsv, lower, upper))
+                // Lock bitmap ?? truy c?p nhanh
+                BitmapData bmpData = src.LockBits(
+                    new Rectangle(0, 0, src.Width, src.Height),
+                    ImageLockMode.ReadOnly,
+                    PixelFormat.Format24bppRgb);
+
+                try
+                {
+                    IntPtr ptr = bmpData.Scan0;
+                    int bytes = Math.Abs(bmpData.Stride) * src.Height;
+                    byte[] rgbValues = new byte[bytes];
+                    Marshal.Copy(ptr, rgbValues, 0, bytes);
+
+                    for (int y = 0; y < src.Height; y++)
+                    {
+                        for (int x = 0; x < src.Width; x++)
                         {
-                            matchCount++;
+                            int index = y * bmpData.Stride + x * 3;
+                            byte b = rgbValues[index];
+                            byte g = rgbValues[index + 1];
+                            byte r = rgbValues[index + 2];
+
+                            // Convert RGB to HSV
+                            var hsv = RgbToHsv(r, g, b);
+
+                            // Check if in range
+                            if (IsInRange(hsv, lower, upper))
+                            {
+                                matchCount++;
+                            }
                         }
                     }
                 }
+                finally
+                {
+                    src.UnlockBits(bmpData);
+                }
+
+                matchPercentage = (double)matchCount / totalPixels * 100.0;
+
+                // Ng??ng phát hi?n: > 1% pixel kh?p
+                return matchPercentage > 1.0;
             }
             finally
             {
-                image.UnlockBits(bmpData);
+                if (created && src != null && !ReferenceEquals(src, image))
+                {
+                    src.Dispose();
+                }
             }
-
-            matchPercentage = (double)matchCount / totalPixels * 100.0;
-
-            // Ng??ng phát hi?n: > 1% pixel kh?p
-            return matchPercentage > 1.0;
         }
 
         /// <summary>
@@ -133,27 +157,37 @@ namespace MPV.Services
             if (image == null || lower == null || upper == null)
                 return null;
 
-            Bitmap mask = new Bitmap(image.Width, image.Height);
-
-            for (int y = 0; y < image.Height; y++)
+            Bitmap src = image;
+            bool created = false;
+            try
             {
-                for (int x = 0; x < image.Width; x++)
+                if (src.PixelFormat != PixelFormat.Format24bppRgb)
                 {
-                    Color pixel = image.GetPixel(x, y);
-                    var hsv = RgbToHsv(pixel.R, pixel.G, pixel.B);
-
-                    if (IsInRange(hsv, lower, upper))
+                    var clone = new Bitmap(src.Width, src.Height, PixelFormat.Format24bppRgb);
+                    using (var g = Graphics.FromImage(clone))
                     {
-                        mask.SetPixel(x, y, Color.White);
+                        g.DrawImage(src, new Rectangle(0, 0, clone.Width, clone.Height));
                     }
-                    else
+                    src = clone;
+                    created = true;
+                }
+
+                Bitmap mask = new Bitmap(src.Width, src.Height);
+                for (int y = 0; y < src.Height; y++)
+                {
+                    for (int x = 0; x < src.Width; x++)
                     {
-                        mask.SetPixel(x, y, Color.Black);
+                        Color pixel = src.GetPixel(x, y);
+                        var hsv = RgbToHsv(pixel.R, pixel.G, pixel.B);
+                        mask.SetPixel(x, y, IsInRange(hsv, lower, upper) ? Color.White : Color.Black);
                     }
                 }
+                return mask;
             }
-
-            return mask;
+            finally
+            {
+                if (created && src != null && !ReferenceEquals(src, image)) src.Dispose();
+            }
         }
     }
 }
