@@ -819,23 +819,23 @@ namespace MPV
             if (_bitmap == null) return;
 
             _zoomFactor = 1.0f;
+            // Fit image to pictureBox1 bounds
             pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
-            // place image in scroll panel at natural size
-            pictureBox1.Dock = DockStyle.None;
-            pictureBox1.Width = _bitmap.Width;
-            pictureBox1.Height = _bitmap.Height;
+            pictureBox1.Dock = DockStyle.Fill;
             pictureBox1.Left = 0;
             pictureBox1.Top = 0;
-            // center if smaller than viewport
-            if (panelScroll != null)
+
+            // Disable scroll sizing influence
+            try
             {
-                int vw = panelScroll.ClientSize.Width;
-                int vh = panelScroll.ClientSize.Height;
-                if (pictureBox1.Width < vw)
-                    pictureBox1.Left = (vw - pictureBox1.Width) / 2;
-                if (pictureBox1.Height < vh)
-                    pictureBox1.Top = (vh - pictureBox1.Height) / 2;
+                if (panelScroll != null)
+                {
+                    panelScroll.AutoScrollMinSize = System.Drawing.Size.Empty;
+                    panelScroll.AutoScrollPosition = new System.Drawing.Point(0, 0);
+                }
             }
+            catch { }
+
             pictureBox1.Invalidate();
         }
 
@@ -1250,6 +1250,10 @@ namespace MPV
                 _cur = bmp;
                 if (oldImage != null && oldImage != bmp) { oldImage.Dispose(); }
 
+                // Ensure correct view (avoid zooming into a corner)
+                ResetZoom();
+
+                // Persist into current FOV
                 var fov = fovList[selectedFovIndex];
                 fov.ImagePath = string.Empty;
                 try { fov.ImageBase64 = BitmapToBase64Png(bmp); } catch { }
