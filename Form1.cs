@@ -989,7 +989,7 @@ namespace MPV
                 return Convert.ToBase64String(ms.ToArray());
             }
         }
-        private Bitmap Base64ToBitmap(string base64)
+        private Bitmap Base64ToBitmap(String base64)
         {
             var bytes = Convert.FromBase64String(base64);
             using (var ms = new MemoryStream(bytes))
@@ -1228,15 +1228,17 @@ namespace MPV
 
                 var currentFov = fovList[selectedFovIndex];
                 int exposureMs = Math.Max(0, currentFov.ExposureTime);
-                int exposureUs = exposureMs * 1000;
-                _cam.SetExposureTime(exposureUs);
+                int targetUs = exposureMs * 1000;
 
-                // read back exposure time to confirm
+                // Set exposure and give the camera time to apply
+                _cam.SetExposureTime(targetUs);
+                System.Threading.Thread.Sleep(Math.Max(50, Math.Min(200, exposureMs / 5))); // 50-200ms
+
+                // Read back exposure (optional)
                 try
                 {
                     if (_cam.GetExposureTime(out int appliedUs) == 1)
                     {
-                        // update FOV ExposureTime textbox in ms to reflect applied value
                         int appliedMs = appliedUs / 1000;
                         if (appliedMs != exposureMs)
                         {
@@ -1247,14 +1249,17 @@ namespace MPV
                 }
                 catch { }
 
-                // wait briefly for exposure to apply
-                System.Threading.Thread.Sleep(50);
-
-                // Try to grab within 10s
-                var bmp = _cam.GrabFrame(10000);
+                // Try to grab within 10s (with one retry)
+                Bitmap bmp = _cam.GrabFrame(10000);
                 if (bmp == null)
                 {
-                    MessageBox.Show("Capture FAIL: no image within 10s.");
+                    // short wait then retry once
+                    System.Threading.Thread.Sleep(100);
+                    bmp = _cam.GrabFrame(5000);
+                }
+                if (bmp == null)
+                {
+                    MessageBox.Show("Capture FAIL: no image.");
                     return;
                 }
 
