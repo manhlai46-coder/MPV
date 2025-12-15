@@ -32,15 +32,17 @@ namespace MPV
         private int selectedFovIndex = -1;
         private int selectedRoiIndex = -1;
         private List<FovRegion> fovList = new List<FovRegion>();
-        private List<RoiRegion> roiList = new List<RoiRegion>();      
+        private List<RoiRegion> roiList = new List<RoiRegion>();
         private readonly Dictionary<(int fov, int roi), bool> _lastTestResults = new Dictionary<(int fov, int roi), bool>();
-        private bool _singleRoiMode = false;     
+        private bool _singleRoiMode = false;
         private bool _showRunResults = false;
         private int _roiToUpdateIndex = -1;
         private float _zoomFactor = 1.0f;
         private const float _zoomStep = 0.1f;
         private const float _minZoom = 0.5f;
         private const float _maxZoom = 5.0f;
+        // new runtime json path for image/template strings
+        private readonly string _fovRuntimePath;
 
         // panel for HSV values on the left
         private Panel _hsvPanel;
@@ -68,12 +70,23 @@ namespace MPV
         {
             InitializeComponent();
 
-            string fovPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "fov_data.json");
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            string fovPath = Path.Combine(baseDir, "fov_data.json");
+            _fovRuntimePath = Path.Combine(baseDir, "fov_data.runtime.json");
             fovManager = new FovManager(fovPath);
             barcodeService = new BarcodeService();
             hsvService = new HsvService();
             roiRenderer = new RoiRenderer(pictureBox1);
             pictureBox1.MouseWheel += pictureBox1_MouseWheel;
+
+            try
+            {
+                if (!File.Exists(_fovRuntimePath))
+                {
+                    File.WriteAllText(_fovRuntimePath, "[]");
+                }
+            }
+            catch { }
 
             // Ensure pictureBox is inside the scrollable panel and visible
             if (panelScroll != null && pictureBox1.Parent != panelScroll)
@@ -1312,5 +1325,76 @@ namespace MPV
                 _isCapturing = false;
             }
         }
+
+        // helper just for runtime json of images/templates
+        private void SaveRuntimeImages()
+        {
+            try
+            {
+                if (fovList == null) return;
+                var list = new List<object>();
+                for (int i = 0; i < fovList.Count; i++)
+                {
+                    var fov = fovList[i];
+                    string img64 = string.Empty;
+                    try
+                    {
+                        if (_bitmap != null && selectedFovIndex == i)
+                        {
+                            img64 = BitmapToBase64Png(_bitmap);
+                        }
+                        else if (!string.IsNullOrEmpty(fov.ImagePath) && File.Exists(fov.ImagePath))
+                        {
+                            using (var b = new Bitmap(fov.ImagePath))
+                            {
+                                img64 = BitmapToBase64Png(b);
+                            }
+                        }
+                    }
+                    catch { }
+
+                    var roiRuntime = new List<object>();
+                    if (fov.Rois != null)
+                    {
+                        for (int j = 0; j < fov.Rois.Count; j++)
+                        {
+                            var r = fov.Rois[j];
+                            string tpl64 = string.Empty;
+                            try
+                            {
+                                if (r.Template != null)
+                                {
+                                    tpl64 = BitmapToBase64Png(r.Template);
+                                }
+                            }
+                            catch { }
+
+                            roiRuntime.Add(new
+                            {
+                                Index = j,
+                                Template = tpl64
+                            });
+                        }
+                    }
+
+                    list.Add(new
+                    {
+                        Index = i,
+                        Image = img64,
+                        Rois = roiRuntime
+                    });
+                }
+
+                string json = Newtonsoft.Json.JsonConvert.SerializeObject(list, Newtonsoft.Json.Formatting.Indented);
+                File.WriteAllText(_fovRuntimePath, json);
+            }
+            catch { }
+        }
+
+        // call this in setup/when capturing image+template
+        private void SaveRuntimeAfterSetup()
+        {
+            SaveRuntimeImages();
+        }
     }
-}
+}  
