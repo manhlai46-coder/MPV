@@ -33,7 +33,7 @@
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.resetToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.textBox1 = new System.Windows.Forms.TextBox();
+            this.txt_sn = new System.Windows.Forms.TextBox();
             this.label2 = new System.Windows.Forms.Label();
             this.lb_fail = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
@@ -61,7 +61,7 @@
             // 
             // splitContainer1.Panel2
             // 
-            this.splitContainer1.Panel2.Controls.Add(this.textBox1);
+            this.splitContainer1.Panel2.Controls.Add(this.txt_sn);
             this.splitContainer1.Panel2.Controls.Add(this.label2);
             this.splitContainer1.Panel2.Controls.Add(this.lb_fail);
             this.splitContainer1.Panel2.Controls.Add(this.label1);
@@ -104,13 +104,13 @@
             this.resetToolStripMenuItem.Text = "Reset";
             this.resetToolStripMenuItem.Click += new System.EventHandler(this.resetToolStripMenuItem_Click);
             // 
-            // textBox1
+            // txt_sn
             // 
-            this.textBox1.Location = new System.Drawing.Point(50, 310);
-            this.textBox1.Name = "textBox1";
-            this.textBox1.ReadOnly = true;
-            this.textBox1.Size = new System.Drawing.Size(130, 20);
-            this.textBox1.TabIndex = 4;
+            this.txt_sn.Location = new System.Drawing.Point(50, 310);
+            this.txt_sn.Name = "txt_sn";
+            this.txt_sn.ReadOnly = true;
+            this.txt_sn.Size = new System.Drawing.Size(130, 20);
+            this.txt_sn.TabIndex = 4;
             // 
             // label2
             // 
@@ -189,7 +189,7 @@
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Panel panel1;
         private System.Windows.Forms.Label lb_fail;
-        private System.Windows.Forms.TextBox textBox1;
+        private System.Windows.Forms.TextBox txt_sn;
         private System.Windows.Forms.Label label2;
         private System.IO.FileSystemWatcher fileSystemWatcher1;
     }
