@@ -338,6 +338,24 @@ namespace Cong1
             catch { return -1; }
         }
 
+        public int GetExposureTime(out int microseconds)
+        {
+            microseconds = 0;
+            try
+            {
+                if (m_hCamera <= 0) return -1;
+                double us = 0;
+                var st = MvApi.CameraGetExposureTime(m_hCamera, ref us);
+                if (st == CameraSdkStatus.CAMERA_STATUS_SUCCESS)
+                {
+                    microseconds = (int)Math.Max(0, Math.Min(int.MaxValue, us));
+                    return 1;
+                }
+                return 0;
+            }
+            catch { return -1; }
+        }
+
         // ===== Nội bộ =====
 
         private CameraHandle FindAndInitDevice(string userDefinedName)

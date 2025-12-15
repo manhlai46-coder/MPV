@@ -1226,34 +1226,46 @@ namespace MPV
                 if (_cam == null || !_cam.IsConnected) return;
                 if (selectedFovIndex < 0 || selectedFovIndex >= fovList.Count) return;
 
-                // 1) Set exposure from FOV textbox (ms -> µs)
                 var currentFov = fovList[selectedFovIndex];
                 int exposureMs = Math.Max(0, currentFov.ExposureTime);
                 int exposureUs = exposureMs * 1000;
                 _cam.SetExposureTime(exposureUs);
 
-                // Optional: set analog gain if SDK có hàm
-                // _cam.SetAnalogGain(50); // ví dụ
+                // read back exposure time to confirm
+                try
+                {
+                    if (_cam.GetExposureTime(out int appliedUs) == 1)
+                    {
+                        // update FOV ExposureTime textbox in ms to reflect applied value
+                        int appliedMs = appliedUs / 1000;
+                        if (appliedMs != exposureMs)
+                        {
+                            currentFov.ExposureTime = appliedMs;
+                            fovManager.Save(fovList);
+                        }
+                    }
+                }
+                catch { }
 
-                // 2) Cho camera thời gian áp dụng cấu hình
+                // wait briefly for exposure to apply
                 System.Threading.Thread.Sleep(50);
 
-                // 3) Chụp ảnh với timeout an toàn (>= exposureMs + 1500, tối thiểu 5000)
-                int safeTimeout = Math.Max(5000, exposureMs + 1500);
-                var bmp = _cam.GrabFrame(safeTimeout);
-                if (bmp == null) return;
+                // Try to grab within 10s
+                var bmp = _cam.GrabFrame(10000);
+                if (bmp == null)
+                {
+                    MessageBox.Show("Capture FAIL: no image within 10s.");
+                    return;
+                }
 
-                // 4) Cập nhật UI + persist vào FOV
                 var oldImage = pictureBox1.Image;
                 _bitmap = bmp;
                 pictureBox1.Image = _bitmap;
                 _cur = bmp;
                 if (oldImage != null && oldImage != bmp) { oldImage.Dispose(); }
 
-                // Ensure correct view (avoid zooming into a corner)
                 ResetZoom();
 
-                // Persist into current FOV
                 var fov = fovList[selectedFovIndex];
                 fov.ImagePath = string.Empty;
                 try { fov.ImageBase64 = BitmapToBase64Png(bmp); } catch { }
