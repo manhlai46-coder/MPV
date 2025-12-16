@@ -36,6 +36,8 @@ namespace MPV
         private readonly Dictionary<int, Bitmap> _liveFramesByFov = new Dictionary<int, Bitmap>();
         private bool _useLiveFramesForPreview;
         private bool _suppressSnEvent;
+        private System.Windows.Forms.Timer _serialTimeoutTimer;
+        private bool _serialReceived;
 
         public lb_pass(Form1 form1)
         {
@@ -77,23 +79,7 @@ namespace MPV
         }
 
         // Public API: cho phép gọi từ code khác với SN nhập tay
-        public void RunBySn(string sn)
-        {
-            if (string.IsNullOrWhiteSpace(sn) || sn.Length != ExpectedCodeLength)
-            {
-                return; // không đủ 22 ký tự thì bỏ qua
-            }
-
-            _lastDecodedCode = sn;
-            try
-            {
-                RunAllFovs(true);
-                DrawVerticalSplits();
-            }
-            catch
-            {
-            }
-        }
+        
 
         protected override void OnShown(EventArgs e)
         {
@@ -129,6 +115,18 @@ namespace MPV
                 DrawVerticalSplits();
             }
             catch { }
+            _serialTimeoutTimer = new System.Windows.Forms.Timer();
+            _serialTimeoutTimer.Interval = 10_000; // 10 giây
+            _serialTimeoutTimer.Tick += (s, e) =>
+            {
+                _serialTimeoutTimer.Stop();
+
+                if (_serialReceived) return;
+
+                // TIMEOUT → FAIL
+                panel1.BackColor = Color.Red;
+            };
+
         }
 
         private void autoRunToolStripMenuItem_Click(object sender, EventArgs e)
@@ -590,6 +588,7 @@ namespace MPV
                 if (haveValidSn)
                 {
                     SaveLogAndImages(_lastAllPass, _lastDecodedCode);
+                    SendDataIT(_lastDecodedCode, _lastAllPass);
                 }
             }
             catch
@@ -708,28 +707,17 @@ namespace MPV
 
         private void txt_sn_TextChanged(object sender, EventArgs e)
         {
-            if (_suppressSnEvent)
-            {
-                return;
-            }
+            if (_suppressSnEvent) return;
 
-            var text = txt_sn?.Text;
-            if (string.IsNullOrWhiteSpace(text))
-            {
-                return;
-            }
+            string sn = txt_sn.Text
+                .Replace("\r", "")
+                .Replace("\n", "")
+                .Trim();
 
-            // Normalize input in case scanner appends CR/LF or spaces
-            text = text.Replace("\r", string.Empty)
-                       .Replace("\n", string.Empty)
-                       .Trim();
+            if (sn.Length != ExpectedCodeLength) return;
 
-            if (text.Length != ExpectedCodeLength)
-            {
-                return;
-            }
-
-            string sn = text;
+            // LƯU SN
+            _lastDecodedCode = sn;
 
             try
             {
@@ -741,7 +729,8 @@ namespace MPV
                 _suppressSnEvent = false;
             }
 
-            RunBySn(sn);
+            RunAllFovs(true);
+            
         }
 
         private Bitmap CreateAnnotatedImage(Bitmap source, FovRegion fov)
@@ -798,27 +787,71 @@ namespace MPV
 
         // gửi data IT
         SerialPort _serialPort = new SerialPort("COM7");
-        public void SendDataIT(string sn, bool isPass)
+        
+        private void SendDataIT(bool isPass)
         {
-            string snsent = txt_sn.Text.Substring(0, 12);
+            string sn12 = _lastDecodedCode.Substring(0, 12);
             string status = isPass ? "PASS" : "FAIL";
-            string datareceive;
+
             if (!_serialPort.IsOpen)
             {
                 _serialPort.Open();
             }
-            if (status == "PASS")
-            {
 
-                string dataToSend = snsent + "             "+ "CHECK_CCD1++";
-                _serialPort.WriteLine(dataToSend);
-            }
-            else
-            {
-                string dataToSend = snsent + "             " + "CHECK_CCD1++"+"FAIL";
-                _serialPort.WriteLine(dataToSend);
-            }
-           
+            string dataToSend = isPass
+         ? sn12 + "             " + "CHECK_CCD1++"
+         : sn12 + "             " + "CHECK_CCD1++FAIL";
+            _serialPort.WriteLine(dataToSend);
         }
+
+        private void SerialPort_DataReceived(object sender, SerialDataReceivedEventArgs e)
+        {
+            try
+            {
+                SerialPort port = sender as SerialPort;
+                if (port == null || !port.IsOpen) return;
+
+                
+                if (!_serialTimeoutTimer.Enabled)
+                {
+                    _serialReceived = false;
+                    _serialTimeoutTimer.Start();
+                }
+
+                string data = port.ReadExisting();
+                if (string.IsNullOrWhiteSpace(data)) return;
+
+                data = data.Replace("\r", "")
+                           .Replace("\n", "")
+                           .Trim();
+
+                this.BeginInvoke(new Action(() =>
+                {
+                    // PASS
+                    if (data.EndsWith("PASS"))
+                    {
+                        _serialReceived = true;
+                        _serialTimeoutTimer.Stop();
+                        panel1.BackColor = Color.Green;
+                    }
+                    // FAIL
+                    else if (data.EndsWith("ERRO") || data.EndsWith("FAILPASS"))
+                    {
+                        _serialReceived = true;
+                        _serialTimeoutTimer.Stop();
+                        panel1.BackColor = Color.Red;
+                    }
+                }));
+            }
+            catch
+            {
+                // bỏ qua lỗi serial
+            }
+        }
+
+
+
+
+
     }
 }
