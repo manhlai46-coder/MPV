@@ -13,6 +13,7 @@ using MPV.Service;
 using MPV.Services;
 using OpenCvSharp;
 using OpenCvSharp.Extensions;
+using System.IO.Ports;
 
 namespace MPV
 {
@@ -97,11 +98,10 @@ namespace MPV
         protected override void OnShown(EventArgs e)
         {
             base.OnShown(e);
-            // Reload and redraw when the form becomes visible - ensures latest data from Form1 is used
+            // Reload data when the form becomes visible so preview matches latest setup
             try { _fovs = _fovManager != null ? _fovManager.Load() : new List<FovRegion>(); } catch { _fovs = new List<FovRegion>(); }
             try
             {
-                RunAllFovs();
                 DrawVerticalSplits();
             }
             catch { }
@@ -109,6 +109,7 @@ namespace MPV
 
         private void Form2_Load(object sender, EventArgs e)
         {
+            
             try { _fovs = _fovManager != null ? _fovManager.Load() : new List<FovRegion>(); } catch { _fovs = new List<FovRegion>(); }
 
             // Ensure ptr_image still fills in case designer overrides
@@ -122,10 +123,9 @@ namespace MPV
             }
             catch { }
 
-            // Run autorun on load so the form behaves the same as clicking the Auto Run menu
+            // Only refresh the preview on load; wait for SN scans before running live tests
             try
             {
-                RunAllFovs();
                 DrawVerticalSplits();
             }
             catch { }
@@ -134,8 +134,11 @@ namespace MPV
         private void autoRunToolStripMenuItem_Click(object sender, EventArgs e)
         {
             try { _fovs = _fovManager != null ? _fovManager.Load() : new List<FovRegion>(); } catch { _fovs = new List<FovRegion>(); }
-            RunAllFovs();
-            DrawVerticalSplits();
+            try
+            {
+                DrawVerticalSplits();
+            }
+            catch { }
         }
 
         private void resetToolStripMenuItem_Click(object sender, EventArgs e)
@@ -146,7 +149,7 @@ namespace MPV
             lb_fail.Text = "Fail";
             _lastAllPass = false;
             panel1.Invalidate();
-       
+
         }
 
         private void panel1_Paint(object sender, PaintEventArgs e)
@@ -435,10 +438,7 @@ namespace MPV
             }
         }
 
-        private void RunAllFovs()
-        {
-            RunAllFovs(false);
-        }
+
 
         private void RunAllFovs(bool captureFromCamera)
         {
@@ -510,14 +510,14 @@ namespace MPV
                             else if (string.Equals(roi.Mode, "HSV", StringComparison.OrdinalIgnoreCase))
                             {
                                 Rectangle rect = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
-                                rect.Intersect(new Rectangle(0,0,fovBmp.Width,fovBmp.Height));
-                                if (rect.Width <=0 || rect.Height <=0) { score = 0; }
+                                rect.Intersect(new Rectangle(0, 0, fovBmp.Width, fovBmp.Height));
+                                if (rect.Width <= 0 || rect.Height <= 0) { score = 0; }
                                 else
                                 {
                                     using (var roiBmp = new Bitmap(rect.Width, rect.Height))
                                     using (var g = Graphics.FromImage(roiBmp))
                                     {
-                                        g.DrawImage(fovBmp, new Rectangle(0,0,rect.Width,rect.Height), rect, GraphicsUnit.Pixel);
+                                        g.DrawImage(fovBmp, new Rectangle(0, 0, rect.Width, rect.Height), rect, GraphicsUnit.Pixel);
                                         var (lowerAuto, upperAuto, _) = _hsvAutoService.Compute(roiBmp, 15, 10);
                                         if (roi.Lower == null || roi.Upper == null)
                                         {
@@ -534,14 +534,14 @@ namespace MPV
                             else
                             {
                                 Rectangle rect = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
-                                rect.Intersect(new Rectangle(0,0,fovBmp.Width,fovBmp.Height));
-                                if (rect.Width <=0 || rect.Height <= 0) { score = 0; }
+                                rect.Intersect(new Rectangle(0, 0, fovBmp.Width, fovBmp.Height));
+                                if (rect.Width <= 0 || rect.Height <= 0) { score = 0; }
                                 else
                                 {
                                     using (var roiBmp = new Bitmap(rect.Width, rect.Height))
                                     using (var g = Graphics.FromImage(roiBmp))
                                     {
-                                        g.DrawImage(fovBmp, new Rectangle(0,0,rect.Width,rect.Height), rect, GraphicsUnit.Pixel);
+                                        g.DrawImage(fovBmp, new Rectangle(0, 0, rect.Width, rect.Height), rect, GraphicsUnit.Pixel);
                                         var algorithm = roi.Algorithm ?? MPV.Enums.BarcodeAlgorithm.QRCode;
                                         string decoded = _barcodeService.Decode(roiBmp, algorithm);
                                         if (!string.IsNullOrWhiteSpace(decoded))
@@ -791,6 +791,34 @@ namespace MPV
             }
 
             return annotated;
+        }
+
+
+
+
+        // gửi data IT
+        SerialPort _serialPort = new SerialPort("COM7");
+        public void SendDataIT(string sn, bool isPass)
+        {
+            string snsent = txt_sn.Text.Substring(0, 12);
+            string status = isPass ? "PASS" : "FAIL";
+            string datareceive;
+            if (!_serialPort.IsOpen)
+            {
+                _serialPort.Open();
+            }
+            if (status == "PASS")
+            {
+
+                string dataToSend = snsent + "             "+ "CHECK_CCD1++";
+                _serialPort.WriteLine(dataToSend);
+            }
+            else
+            {
+                string dataToSend = snsent + "             " + "CHECK_CCD1++"+"FAIL";
+                _serialPort.WriteLine(dataToSend);
+            }
+           
         }
     }
 }
