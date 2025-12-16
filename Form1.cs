@@ -181,7 +181,7 @@ namespace MPV
             _hsvPanel.Controls.Add(_txtSL);
             _hsvPanel.Controls.Add(_txtSU);
             _hsvPanel.Controls.Add(_txtVL);
-            _hsvPanel.Controls.Add(_txtVU);
+            //_hsvPanelControls.Add(_txtVU);
 
             grpTemplate.Controls.Add(_hsvPanel);
         }
@@ -297,8 +297,8 @@ namespace MPV
         private void InitializeContextMenu()
         {
             contextMenu = new ContextMenuStrip();
-            var menuItemDrawRoi = new ToolStripMenuItem("Vẽ ROI",null, menuItemDrawRoi_Click);
-            var menuItemResetRoi = new ToolStripMenuItem("Reset ROI",null, menuItemResetRoi_Click);
+            var menuItemDrawRoi = new ToolStripMenuItem("Vẽ ROI", null, menuItemDrawRoi_Click);
+            var menuItemResetRoi = new ToolStripMenuItem("Reset ROI", null, menuItemResetRoi_Click);
             var menuItemCancel = new ToolStripMenuItem("Hủy", null, (s, e) => { _drawMode = false; });
             var menuItemZoomIn = new ToolStripMenuItem("Phóng to (+)", null, (s, e) => ZoomIn());
             var menuItemZoomOut = new ToolStripMenuItem("Thu nhỏ (-)", null, (s, e) => ZoomOut());
@@ -315,7 +315,7 @@ namespace MPV
             contextMenu.Items.Add(menuItemCancel);
             pictureBox1.ContextMenuStrip = contextMenu;
 
-            
+
             contextMenu.Opening += ContextMenu_Opening;
         }
 
@@ -353,7 +353,7 @@ namespace MPV
                 roi.Width = 0;
                 roi.Height = 0;
                 fovManager.Save(fovList);
-               // MessageBox.Show($"Đã reset ROI {(_roiToUpdateIndex + 1)}.");
+                // MessageBox.Show($"Đã reset ROI {(_roiToUpdateIndex + 1)}.");
                 pictureBox1.Invalidate();
             }
         }
@@ -397,19 +397,20 @@ namespace MPV
             _cam2.DeviceListAcq();
             InitializeContextMenu();
             this.KeyPreview = true;
-            // giữ highlight node đang chọn khi TreeView mất focus
             try { pn_property.HideSelection = false; } catch { }
             ptr_template.Image = null;
+            // load runtime images/templates from image/image.json before building UI - disabled
+            // try { LoadRuntimeImages(); } catch { }
             SyncTemplatePanel();
-            try { LoadFovToTreeView(); } 
-            catch (Exception ex) 
-            { MessageBox.Show("Lỗi khi load JSON: " + ex.Message); LoggerService.Error("Error loading JSON", ex);}
+            try { LoadFovToTreeView(); }
+            catch (Exception ex)
+            { MessageBox.Show("Lỗi khi load JSON: " + ex.Message); LoggerService.Error("Error loading JSON", ex); }
             //connect camera
             if (_cam1.IsConnected && _cam2.IsConnected) return;
             if (_cam1.Open("025071123047") <= 0) // truyen ma SM cua camera vao day 
             {
                 MessageBox.Show("Open failed cam1");
-            
+
                 return;
             }
             if (_cam2.Open("025021223098") <= 0)
@@ -417,7 +418,7 @@ namespace MPV
                 MessageBox.Show("Open failed cam2");
                 return;
             }
-                _cam1.StartLive();
+            _cam1.StartLive();
             _cam2.StartLive();
         }
 
@@ -445,17 +446,10 @@ namespace MPV
             {
                 var fov = fovList[i];
                 var fovNode = new TreeNode($"FOV {i + 1}");
-                // Remove image path display
-                // fovNode.Nodes.Add($"Image: {Path.GetFileName(fov.ImagePath)}");
 
                 for (int j = 0; j < fov.Rois.Count; j++)
                 {
                     var roiNode = new TreeNode($"ROI {j + 1}");
-                    // Remove ROI details display
-                    // roiNode.Nodes.Add($"X: {roi.X}");
-                    // roiNode.Nodes.Add($"Y: {roi.Y}");
-                    // roiNode.Nodes.Add($"Width: {roi.Width}");
-                    // roiNode.Nodes.Add($"Height: {roi.Height}");
                     fovNode.Nodes.Add(roiNode);
                 }
 
@@ -465,15 +459,24 @@ namespace MPV
             pn_property.Nodes.Add(root);
             root.Expand();
 
-            // Restore previous selection if possible
+            // Restore previous selection if possible, otherwise select first FOV to load its image
+            TreeNode nodeToSelect = null;
             if (prevFov >= 0 && prevFov < root.Nodes.Count)
             {
                 var fovNode = root.Nodes[prevFov];
-                TreeNode nodeToSelect = fovNode;
+                nodeToSelect = fovNode;
                 if (prevRoi >= 0 && prevRoi < fovNode.Nodes.Count)
                 {
                     nodeToSelect = fovNode.Nodes[prevRoi];
                 }
+            }
+            else if (root.Nodes.Count > 0)
+            {
+                nodeToSelect = root.Nodes[0];
+            }
+
+            if (nodeToSelect != null)
+            {
                 pn_property.SelectedNode = nodeToSelect;
                 nodeToSelect.EnsureVisible();
             }
@@ -494,23 +497,34 @@ namespace MPV
                 if (selectedFovIndex >= 0 && selectedFovIndex < fovList.Count)
                 {
                     var fov = fovList[selectedFovIndex];
-                    if (File.Exists(fov.ImagePath))
+                    // Load bitmap from base64 if available
+                    if (!string.IsNullOrEmpty(fov.ImageBase64))
                     {
-                        _bitmap = new Bitmap(fov.ImagePath);
-                        pictureBox1.Image = _bitmap;
-                        ResetZoom();
-                        roiList = fov.Rois;
-                        foreach (var roi in roiList)
+                        try
                         {
-                            if (roi.Template == null /* && !string.IsNullOrEmpty(roi.TemplateBase64) */)
-                            {
-                                // No longer restoring from base64; keep Template runtime-only
-                            }
+                            _bitmap = Base64ToBitmap(fov.ImageBase64);
+                            pictureBox1.Image = _bitmap;
+                            ResetZoom();
                         }
+                        catch { pictureBox1.Image = null; _bitmap = null; }
                     }
                     else
                     {
-                        pictureBox1.Image = null; _bitmap = null; roiList = new List<RoiRegion>();
+                        pictureBox1.Image = null; _bitmap = null;
+                    }
+                    roiList = fov.Rois;
+                    // try restore templates from base64 if present
+                    for (int j = 0; j < roiList.Count; j++)
+                    {
+                        var roi = roiList[j];
+                        if (roi.Template == null && !string.IsNullOrEmpty(roi.TemplateBase64))
+                        {
+                            try
+                            {
+                                roi.Template = Base64ToBitmap(roi.TemplateBase64);
+                            }
+                            catch { }
+                        }
                     }
                 }
                 selectedRoiIndex = -1;
@@ -537,9 +551,13 @@ namespace MPV
                 if (selectedRoiIndex >= 0 && selectedRoiIndex < roiList.Count)
                 {
                     var r = roiList[selectedRoiIndex];
-                    if (r.Template == null /* && !string.IsNullOrEmpty(r.TemplateBase64) */)
+                    if (r.Template == null && !string.IsNullOrEmpty(r.TemplateBase64))
                     {
-                        // runtime only
+                        try
+                        {
+                            r.Template = Base64ToBitmap(r.TemplateBase64);
+                        }
+                        catch { }
                     }
                 }
                 SyncTemplatePanel();
@@ -556,7 +574,7 @@ namespace MPV
                         selectedFovIndex,
                         selectedRoiIndex,
                         roiList);
-                    propertyPanel.RoiChanged += () => 
+                    propertyPanel.RoiChanged += () =>
                     {
                         var currentNode = pn_property.SelectedNode; // nhớ node đang chọn
                         SyncTemplatePanel();
@@ -589,16 +607,20 @@ namespace MPV
                     if (selectedRoiIndex >= 0 && selectedRoiIndex < roiList.Count)
                     {
                         var r = roiList[selectedRoiIndex];
-                        if (r.Template == null /* && !string.IsNullOrEmpty(r.TemplateBase64) */)
+                        if (r.Template == null && !string.IsNullOrEmpty(r.TemplateBase64))
                         {
-                            // runtime only
+                            try
+                            {
+                                r.Template = Base64ToBitmap(r.TemplateBase64);
+                            }
+                            catch { }
                         }
                     }
                 }
             }
         }
 
-        
+
 
         private void btn_delete_Click(object sender, EventArgs e)
         {
@@ -616,16 +638,20 @@ namespace MPV
 
                     LoadFovToTreeView();
 
-                    if (selectedFovIndex >= 0 && selectedFovIndex < fovList.Count && File.Exists(fovList[selectedFovIndex].ImagePath))
+                    if (selectedFovIndex >= 0 && selectedFovIndex < fovList.Count)
                     {
-                        _bitmap = new Bitmap(fovList[selectedFovIndex].ImagePath);
-                        pictureBox1.Image = _bitmap;
-                        _showRoiOnImage = true;
-                        ResetZoom();
-                        pictureBox1.Invalidate();
+                        var fov = fovList[selectedFovIndex];
+                        if (!string.IsNullOrEmpty(fov.ImageBase64))
+                        {
+                            _bitmap = Base64ToBitmap(fov.ImageBase64);
+                            pictureBox1.Image = _bitmap;
+                            _showRoiOnImage = true;
+                            ResetZoom();
+                            pictureBox1.Invalidate();
+                        }
                     }
 
-                    
+
                 }
             }
             else if (pn_property.SelectedNode.Text.StartsWith("FOV ") && selectedFovIndex >= 0)
@@ -641,11 +667,12 @@ namespace MPV
                     if (fovList.Count > 0)
                     {
                         selectedFovIndex = 0;
-                        if (File.Exists(fovList[0].ImagePath))
+                        var fov0 = fovList[0];
+                        if (!string.IsNullOrEmpty(fov0.ImageBase64))
                         {
-                            _bitmap = new Bitmap(fovList[0].ImagePath);
+                            _bitmap = Base64ToBitmap(fov0.ImageBase64);
                             pictureBox1.Image = _bitmap;
-                            roiList = fovList[0].Rois;
+                            roiList = fov0.Rois;
                             _showRoiOnImage = true;
                             ResetZoom();
                         }
@@ -702,8 +729,8 @@ namespace MPV
                 }
             }
         }
-        
-        
+
+
         private void pictureBox1_Paint(object sender, PaintEventArgs e)
         {
             if (_bitmap == null) return;
@@ -923,7 +950,7 @@ namespace MPV
             return string.Equals(user, "admin", StringComparison.OrdinalIgnoreCase)
                 && string.Equals(pass, "admin");
         }
-        
+
         // helper to determine template mode with or without space
         private bool IsTemplateMode(string mode)
         {
@@ -998,8 +1025,8 @@ namespace MPV
             {
                 if (_bitmap == null) return;
                 Rectangle rect = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
-                rect.Intersect(new Rectangle(0,0,_bitmap.Width,_bitmap.Height));
-                if (rect.Width <=0 || rect.Height <=0) return;
+                rect.Intersect(new Rectangle(0, 0, _bitmap.Width, _bitmap.Height));
+                if (rect.Width <= 0 || rect.Height <= 0) return;
                 using (var roiBmp = new Bitmap(rect.Width, rect.Height))
                 using (var g = Graphics.FromImage(roiBmp))
                 {
@@ -1013,14 +1040,19 @@ namespace MPV
 
             if (_bitmap == null) return;
             Rectangle rectT = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
-            rectT.Intersect(new Rectangle(0,0,_bitmap.Width,_bitmap.Height));
-            if (rectT.Width <=0 || rectT.Height <= 0) return;
+            rectT.Intersect(new Rectangle(0, 0, _bitmap.Width, _bitmap.Height));
+            if (rectT.Width <= 0 || rectT.Height <= 0) return;
             roi.Template?.Dispose();
             Bitmap bmp = new Bitmap(rectT.Width, rectT.Height);
             using (Graphics g = Graphics.FromImage(bmp))
-                g.DrawImage(_bitmap, new Rectangle(0,0,rectT.Width,rectT.Height), rectT, GraphicsUnit.Pixel);
+                g.DrawImage(_bitmap, new Rectangle(0, 0, rectT.Width, rectT.Height), rectT, GraphicsUnit.Pixel);
             roi.Template = bmp;
-            // roi.TemplateBase64 = BitmapToBase64Png(bmp);
+            // persist template into base64 in JSON
+            try
+            {
+                roi.TemplateBase64 = BitmapToBase64Png(bmp);
+            }
+            catch { }
             roi.MatchScore = 0; roi.LastScore = 0; roi.MatchRect = Rectangle.Empty;
             fovManager.Save(fovList);
             SyncTemplatePanel();
@@ -1202,26 +1234,25 @@ namespace MPV
             if (_bitmap == null)
             {
                 var fov = fovList[selectedFovIndex];
-                if (File.Exists(fov.ImagePath))
+                if (!string.IsNullOrEmpty(fov.ImageBase64))
                 {
-                    _bitmap = new Bitmap(fov.ImagePath);
-                    try { fov.ImageBase64 = BitmapToBase64Png(_bitmap); fovManager.Save(fovList); } catch { }
+                    _bitmap = Base64ToBitmap(fov.ImageBase64);
                 }
                 pictureBox1.Image = _bitmap; pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
             }
             var roi = roiList[selectedRoiIndex];
-            if (roi.Template == null /* && !string.IsNullOrEmpty(roi.TemplateBase64) */)
+            if (roi.Template == null && !string.IsNullOrEmpty(roi.TemplateBase64))
             {
-                // runtime only
+                try { roi.Template = Base64ToBitmap(roi.TemplateBase64); } catch { }
             }
             Rectangle rect = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
-            rect.Intersect(new Rectangle(0,0,_bitmap.Width,_bitmap.Height));
-            if (rect.Width <=0 || rect.Height <=0) { MessageBox.Show("ROI nằm ngoài ảnh."); return; }
+            rect.Intersect(new Rectangle(0, 0, _bitmap.Width, _bitmap.Height));
+            if (rect.Width <= 0 || rect.Height <= 0) { MessageBox.Show("ROI nằm ngoài ảnh."); return; }
             int score = 0;
             using (var roiBmp = new Bitmap(rect.Width, rect.Height))
             using (var g = Graphics.FromImage(roiBmp))
             {
-                g.DrawImage(_bitmap, new Rectangle(0,0,rect.Width,rect.Height), rect, GraphicsUnit.Pixel);
+                g.DrawImage(_bitmap, new Rectangle(0, 0, rect.Width, rect.Height), rect, GraphicsUnit.Pixel);
                 if (IsTemplateMode(roi.Mode) && roi.Template != null)
                 {
                     Rectangle mrect; double mscore;
@@ -1245,7 +1276,7 @@ namespace MPV
                 else
                 {
                     var algorithm = roi.Algorithm ?? BarcodeAlgorithm.QRCode; string decoded = barcodeService.Decode(roiBmp, algorithm);
-                    bool ok = !string.IsNullOrWhiteSpace(decoded) && (roi.ExpectedLength <=0 || decoded.Length == roi.ExpectedLength);
+                    bool ok = !string.IsNullOrWhiteSpace(decoded) && (roi.ExpectedLength <= 0 || decoded.Length == roi.ExpectedLength);
                     score = ok ? 100 : 0;
                 }
             }
@@ -1309,11 +1340,17 @@ namespace MPV
                 _cur = bmp;
                 if (oldImage != null && oldImage != bmp) { oldImage.Dispose(); }
 
+                // persist captured image into base64 within JSON
+                try
+                {
+                    var fov = fovList[selectedFovIndex];
+                    fov.ImageBase64 = BitmapToBase64Png(bmp);
+                }
+                catch { }
+
                 ResetZoom();
 
-                var fov = fovList[selectedFovIndex];
-                // fov.ImagePath = string.Empty;
-                // try { fov.ImageBase64 = BitmapToBase64Png(bmp); } catch { }
+                var fovPersist = fovList[selectedFovIndex];
                 fovManager.Save(fovList);
             }
             catch (Exception ex)
@@ -1326,75 +1363,44 @@ namespace MPV
             }
         }
 
-        // helper just for runtime json of images/templates
-        private void SaveRuntimeImages()
+        public Bitmap CaptureFovImage(FovRegion fov)
         {
+            if (fov == null)
+            {
+                return null;
+            }
+
+            string camMode = fov.CameraMode ?? "Camera1";
+            var cam = string.Equals(camMode, "Camera2", StringComparison.OrdinalIgnoreCase) ? _cam2 : _cam1;
+            if (cam == null || !cam.IsConnected)
+            {
+                return null;
+            }
+
             try
             {
-                if (fovList == null) return;
-                var list = new List<object>();
-                for (int i = 0; i < fovList.Count; i++)
+                int exposureMs = Math.Max(0, fov.ExposureTime);
+                int exposureUs = exposureMs * 1000;
+                cam.SetExposureTime(exposureUs);
+                int settleDelay = exposureMs > 0 ? Math.Max(50, Math.Min(200, exposureMs / 5)) : 50;
+                System.Threading.Thread.Sleep(settleDelay);
+
+                Bitmap bmp = cam.GrabFrame(10000);
+                if (bmp == null)
                 {
-                    var fov = fovList[i];
-                    string img64 = string.Empty;
-                    try
-                    {
-                        if (_bitmap != null && selectedFovIndex == i)
-                        {
-                            img64 = BitmapToBase64Png(_bitmap);
-                        }
-                        else if (!string.IsNullOrEmpty(fov.ImagePath) && File.Exists(fov.ImagePath))
-                        {
-                            using (var b = new Bitmap(fov.ImagePath))
-                            {
-                                img64 = BitmapToBase64Png(b);
-                            }
-                        }
-                    }
-                    catch { }
-
-                    var roiRuntime = new List<object>();
-                    if (fov.Rois != null)
-                    {
-                        for (int j = 0; j < fov.Rois.Count; j++)
-                        {
-                            var r = fov.Rois[j];
-                            string tpl64 = string.Empty;
-                            try
-                            {
-                                if (r.Template != null)
-                                {
-                                    tpl64 = BitmapToBase64Png(r.Template);
-                                }
-                            }
-                            catch { }
-
-                            roiRuntime.Add(new
-                            {
-                                Index = j,
-                                Template = tpl64
-                            });
-                        }
-                    }
-
-                    list.Add(new
-                    {
-                        Index = i,
-                        Image = img64,
-                        Rois = roiRuntime
-                    });
+                    System.Threading.Thread.Sleep(100);
+                    bmp = cam.GrabFrame(5000);
                 }
-
-                string json = Newtonsoft.Json.JsonConvert.SerializeObject(list, Newtonsoft.Json.Formatting.Indented);
-                File.WriteAllText(_fovRuntimePath, json);
+                return bmp;
             }
-            catch { }
+            catch
+            {
+                return null;
+            }
         }
 
-        // call this in setup/when capturing image+template
-        private void SaveRuntimeAfterSetup()
-        {
-            SaveRuntimeImages();
-        }
+        // helper just for runtime json of images/templates - removed
+        // private void SaveRuntimeImages() { }
+        // private void LoadRuntimeImages() { }
     }
-}  
+}

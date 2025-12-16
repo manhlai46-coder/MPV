@@ -18,7 +18,6 @@ namespace MPV.Models
         [JsonIgnore]
         public string ImagePath { get; set; }
         // Base64 PNG of the FOV image, used when ImagePath is unavailable
-        [JsonIgnore]
         public string ImageBase64 { get; set; }
 
         public List<RoiRegion> Rois { get; set; } = new List<RoiRegion>();

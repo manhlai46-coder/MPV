@@ -108,9 +108,9 @@
             // 
             this.txt_sn.Location = new System.Drawing.Point(50, 310);
             this.txt_sn.Name = "txt_sn";
-            this.txt_sn.ReadOnly = true;
             this.txt_sn.Size = new System.Drawing.Size(130, 20);
             this.txt_sn.TabIndex = 4;
+            this.txt_sn.TextChanged += new System.EventHandler(this.txt_sn_TextChanged);
             // 
             // label2
             // 
