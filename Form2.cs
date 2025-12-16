@@ -667,25 +667,33 @@ namespace MPV
 
                 string timeStamp = DateTime.Now.ToString("HHmmss");
 
-                int maxImages = Math.Min(2, _capturedFrames.Count);
-                for (int i = 0; i < maxImages; i++)
+                for (int i = 0; i < _fovs.Count; i++)
                 {
-                    Bitmap bmp = null;
-                    try
+                    Bitmap frame = null;
+                    if (_liveFramesByFov.TryGetValue(i, out var liveFrame) && liveFrame != null)
                     {
-                        bmp = _capturedFrames[i];
-                        if (bmp == null)
+                        frame = liveFrame;
+                    }
+                    else if (i < _capturedFrames.Count)
+                    {
+                        frame = _capturedFrames[i];
+                    }
+
+                    if (frame == null)
+                    {
+                        continue;
+                    }
+
+                    using (var annotated = CreateAnnotatedImage(frame, _fovs[i]))
+                    {
+                        if (annotated == null)
                         {
                             continue;
                         }
 
                         string fileName = string.Format("{0}_FOV{1}.png", timeStamp, i + 1);
                         string path = Path.Combine(targetFolder, fileName);
-
-                        bmp.Save(path, System.Drawing.Imaging.ImageFormat.Png);
-                    }
-                    catch
-                    {
+                        annotated.Save(path, System.Drawing.Imaging.ImageFormat.Png);
                     }
                 }
             }
@@ -736,5 +744,53 @@ namespace MPV
             RunBySn(sn);
         }
 
+        private Bitmap CreateAnnotatedImage(Bitmap source, FovRegion fov)
+        {
+            if (source == null || fov == null)
+            {
+                return null;
+            }
+
+            var annotated = new Bitmap(source.Width, source.Height);
+            using (var g = Graphics.FromImage(annotated))
+            {
+                g.DrawImage(source, 0, 0, source.Width, source.Height);
+                var rois = fov.Rois ?? new List<RoiRegion>();
+                using (var font = new Font("Segoe UI", 9f, FontStyle.Bold))
+                {
+                    for (int r = 0; r < rois.Count; r++)
+                    {
+                        var roi = rois[r];
+                        if (roi.IsHidden) continue;
+
+                        var rect = new Rectangle(roi.X, roi.Y, roi.Width, roi.Height);
+                        rect.Intersect(new Rectangle(0, 0, annotated.Width, annotated.Height));
+                        if (rect.Width <= 0 || rect.Height <= 0) continue;
+
+                        bool pass = EvaluateScoreLocal(roi, roi.LastScore);
+                        using (var pen = new Pen(pass ? Color.LimeGreen : Color.Red, 2))
+                        {
+                            g.DrawRectangle(pen, rect);
+                        }
+
+                        string label = $"ROI {r + 1}";
+                        var textSize = g.MeasureString(label, font);
+                        float labelX = rect.X;
+                        float labelY = Math.Max(0, rect.Y - textSize.Height - 2);
+                        var textRect = new RectangleF(labelX, labelY, textSize.Width + 4, textSize.Height);
+                        using (var bgBrush = new SolidBrush(Color.FromArgb(160, 0, 0, 0)))
+                        {
+                            g.FillRectangle(bgBrush, textRect);
+                        }
+                        using (var textBrush = new SolidBrush(pass ? Color.LimeGreen : Color.Red))
+                        {
+                            g.DrawString(label, font, textBrush, labelX + 2, labelY);
+                        }
+                    }
+                }
+            }
+
+            return annotated;
+        }
     }
 }
