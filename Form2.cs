@@ -74,6 +74,28 @@ namespace MPV
         {
             ResetCapturedFrames();
             ResetLiveFrames();
+            
+            // Close serial port
+            try
+            {
+                if (_serialPort != null && _serialPort.IsOpen)
+                {
+                    _serialPort.Close();
+                }
+            }
+            catch { }
+            
+            // Stop timer
+            try
+            {
+                if (_serialTimeoutTimer != null)
+                {
+                    _serialTimeoutTimer.Stop();
+                    _serialTimeoutTimer.Dispose();
+                }
+            }
+            catch { }
+            
             _form1.Show();  // khi Form2 tắt → hiện lại Form1
             base.OnFormClosed(e);
         }
@@ -115,16 +137,35 @@ namespace MPV
                 DrawVerticalSplits();
             }
             catch { }
+            
+            // Configure serial port
+            try
+            {
+                _serialPort.BaudRate = 9600;
+                _serialPort.DataBits = 8;
+                _serialPort.StopBits = StopBits.One;
+                _serialPort.Parity = Parity.None;
+                _serialPort.DataReceived += SerialPort_DataReceived;
+            }
+            catch { }
+            
+            // Configure timeout timer
             _serialTimeoutTimer = new System.Windows.Forms.Timer();
             _serialTimeoutTimer.Interval = 10_000; // 10 giây
-            _serialTimeoutTimer.Tick += (s, e) =>
+            _serialTimeoutTimer.Tick += (s, ev) =>
             {
                 _serialTimeoutTimer.Stop();
 
                 if (_serialReceived) return;
 
                 // TIMEOUT → FAIL
-                panel1.BackColor = Color.Red;
+                this.BeginInvoke(new Action(() =>
+                {
+                    panel1.BackColor = Color.Red;
+                    _numfail++;
+                    lb_fail.Text = $"Fail: {_numfail}";
+                    panel1.Invalidate();
+                }));
             };
 
         }
@@ -449,11 +490,7 @@ namespace MPV
 
             if (_fovs == null || _fovs.Count == 0)
             {
-                panel1.BackColor = Color.Red;
                 _lastAllPass = false;
-                panel1.Invalidate();
-                _numfail++;
-                lb_fail.Text = $"Fail: {_numfail}";
                 if (captureFromCamera)
                 {
                     ResetCapturedFrames();
@@ -570,17 +607,6 @@ namespace MPV
             }
 
             _lastAllPass = allFovsPass;
-            if (allFovsPass)
-            {
-                panel1.BackColor = Color.Green;
-                label1.Text = $"Pass: {++_numpass}";
-            }
-            else
-            {
-                panel1.BackColor = Color.Red;
-                lb_fail.Text = $"Fail: {++_numfail}";
-            }
-            panel1.Invalidate();
 
             bool haveValidSn = !string.IsNullOrWhiteSpace(_lastDecodedCode) && _lastDecodedCode.Length == ExpectedCodeLength;
             try
@@ -588,7 +614,6 @@ namespace MPV
                 if (haveValidSn)
                 {
                     SaveLogAndImages(_lastAllPass, _lastDecodedCode);
-                    SendDataIT(_lastDecodedCode, _lastAllPass);
                 }
             }
             catch
@@ -729,8 +754,15 @@ namespace MPV
                 _suppressSnEvent = false;
             }
 
+            // Chạy đánh giá - chỉ để lấy kết quả, không hiển thị
             RunAllFovs(true);
             
+            // Gửi data serial theo kết quả đánh giá
+            SendDataIT(_lastDecodedCode, _lastAllPass);
+            
+            // Bắt đầu timeout timer - chờ response từ serial
+            _serialReceived = false;
+            _serialTimeoutTimer.Start();
         }
 
         private Bitmap CreateAnnotatedImage(Bitmap source, FovRegion fov)
@@ -785,23 +817,40 @@ namespace MPV
 
 
 
+
+
+
+
+
         // gửi data IT
         SerialPort _serialPort = new SerialPort("COM7");
         
-        private void SendDataIT(bool isPass)
+        private void SendDataIT(string snCode, bool isPass)
         {
-            string sn12 = _lastDecodedCode.Substring(0, 12);
-            string status = isPass ? "PASS" : "FAIL";
-
-            if (!_serialPort.IsOpen)
+            if (string.IsNullOrWhiteSpace(snCode) || snCode.Length < 12)
             {
-                _serialPort.Open();
+                return;
             }
 
-            string dataToSend = isPass
-         ? sn12 + "             " + "CHECK_CCD1++"
-         : sn12 + "             " + "CHECK_CCD1++FAIL";
-            _serialPort.WriteLine(dataToSend);
+            string sn12 = snCode.Substring(0, 12);
+            
+            try
+            {
+                if (!_serialPort.IsOpen)
+                {
+                    _serialPort.Open();
+                }
+
+                string dataToSend = isPass
+                    ? sn12 + "             " + "CHECK_CCD1++"
+                    : sn12 + "             " + "CHECK_CCD1++FAIL";
+                    
+                _serialPort.WriteLine(dataToSend);
+            }
+            catch
+            {
+                // bỏ qua lỗi serial
+            }
         }
 
         private void SerialPort_DataReceived(object sender, SerialDataReceivedEventArgs e)
@@ -810,13 +859,6 @@ namespace MPV
             {
                 SerialPort port = sender as SerialPort;
                 if (port == null || !port.IsOpen) return;
-
-                
-                if (!_serialTimeoutTimer.Enabled)
-                {
-                    _serialReceived = false;
-                    _serialTimeoutTimer.Start();
-                }
 
                 string data = port.ReadExisting();
                 if (string.IsNullOrWhiteSpace(data)) return;
@@ -827,19 +869,24 @@ namespace MPV
 
                 this.BeginInvoke(new Action(() =>
                 {
+                    _serialReceived = true;
+                    _serialTimeoutTimer.Stop();
+                    
                     // PASS
-                    if (data.EndsWith("PASS"))
-                    {
-                        _serialReceived = true;
-                        _serialTimeoutTimer.Stop();
+                    if (data.Contains("PASS")) 
+                    { 
                         panel1.BackColor = Color.Green;
+                        _numpass++;
+                        label1.Text = $"Pass: {_numpass}";
+                        panel1.Invalidate();
                     }
                     // FAIL
-                    else if (data.EndsWith("ERRO") || data.EndsWith("FAILPASS"))
+                    else if (data.Contains("ERRO") || data.Contains("FAILPASS"))
                     {
-                        _serialReceived = true;
-                        _serialTimeoutTimer.Stop();
                         panel1.BackColor = Color.Red;
+                        _numfail++;
+                        lb_fail.Text = $"Fail: {_numfail}";
+                        panel1.Invalidate();
                     }
                 }));
             }
