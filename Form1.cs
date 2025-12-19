@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
+using MPV.Camera;
 
 namespace MPV
 {
@@ -60,8 +61,8 @@ namespace MPV
         private TextBox _txtBarcodeLen;
 
         // Connect cam
-        private MindVisionCamera _cam1 = new MindVisionCamera();
-        private MindVisionCamera _cam2 = new MindVisionCamera();
+        private ICamera _cam1;
+        private ICamera _cam2;
 
         private Bitmap _cur;
         private bool _isCapturing = false;
@@ -393,33 +394,27 @@ namespace MPV
         }
         private void Form1_Load(object sender, EventArgs e)
         {
-            _cam1.DeviceListAcq();
-            _cam2.DeviceListAcq();
+            // Khởi tạo camera từ file config trước khi dùng
+            try
+            {
+                CameraManager.Initialize();
+                _cam1 = CameraManager.Cam1;
+                _cam2 = CameraManager.Cam2;
+            }
+            catch { }
+
             InitializeContextMenu();
             this.KeyPreview = true;
             try { pn_property.HideSelection = false; } catch { }
             ptr_template.Image = null;
-            // load runtime images/templates from image/image.json before building UI - disabled
-            // try { LoadRuntimeImages(); } catch { }
             SyncTemplatePanel();
             try { LoadFovToTreeView(); }
             catch (Exception ex)
             { MessageBox.Show("Lỗi khi load JSON: " + ex.Message); LoggerService.Error("Error loading JSON", ex); }
-            //connect camera
-            if (_cam1.IsConnected && _cam2.IsConnected) return;
-            if (_cam1.Open("025071123047") <= 0) // truyen ma SM cua camera vao day 
-            {
-                MessageBox.Show("Open failed cam1");
 
-                return;
-            }
-            if (_cam2.Open("025021223098") <= 0)
-            {
-                MessageBox.Show("Open failed cam2");
-                return;
-            }
-            _cam1.StartLive();
-            _cam2.StartLive();
+            // Nếu cần, start live cho cam đã mở (MindVision cần, USB không bắt buộc)
+            try { if (_cam1 != null && _cam1.IsConnected) _cam1.StartLive(); } catch { }
+            try { if (_cam2 != null && _cam2.IsConnected) _cam2.StartLive(); } catch { }
         }
 
         private void LoadFovToTreeView()
