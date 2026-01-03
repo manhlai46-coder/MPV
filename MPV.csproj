@@ -47,10 +47,10 @@
       <HintPath>packages\Microsoft.Bcl.AsyncInterfaces.9.0.0\lib\net462\Microsoft.Bcl.AsyncInterfaces.dll</HintPath>
     </Reference>
     <Reference Include="MvCameraControl.Net">
-      <HintPath>C:\Users\Administrator\Downloads\MvCameraControl.Net.dll</HintPath>
+      <HintPath>C:\Users\Manh-Vison\Downloads\MvCameraControl.Net.dll</HintPath>
     </Reference>
     <Reference Include="MVSDK">
-      <HintPath>C:\Users\Administrator\Downloads\MVSDK.dll</HintPath>
+      <HintPath>C:\Users\Manh-Vison\Downloads\MVSDK.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>packages\Newtonsoft.Json.13.0.4\lib\net45\Newtonsoft.Json.dll</HintPath>
@@ -142,13 +142,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Camera\CamTypes.cs" />
-    <Compile Include="Camera\HikvisionCamera.cs" />
-    <Compile Include="Camera\ICamera.cs" />
     <Compile Include="Camera\MindVision.cs" />
-    <Compile Include="Camera\MindVisionCameraAdapter.cs" />
-    <Compile Include="Camera\UsbEmguCamera.cs" />
-    <Compile Include="Config\CameraConfig.cs" />
     <Compile Include="Enums\BarcodeAlgorithm.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
@@ -162,6 +156,12 @@
     <Compile Include="Form2.Designer.cs">
       <DependentUpon>Form2.cs</DependentUpon>
     </Compile>
+    <Compile Include="Setting.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Setting.Designer.cs">
+      <DependentUpon>Setting.cs</DependentUpon>
+    </Compile>
     <Compile Include="Models\FovRegion.cs" />
     <Compile Include="Models\HsvRange.cs" />
     <Compile Include="Models\HsvValue.cs" />
@@ -171,8 +171,6 @@
     <Compile Include="Renderers\FovPropertyPanel.cs" />
     <Compile Include="Renderers\RoiPropertyPanel.cs" />
     <Compile Include="Renderers\RoiRenderers.cs" />
-    <Compile Include="Services\CameraConfigLoader.cs" />
-    <Compile Include="Services\CameraManager.cs" />
     <Compile Include="Services\HsvAutoService.cs" />
     <Compile Include="Services\HsvService.cs" />
     <Compile Include="Service\BarcodeService.cs" />
@@ -184,6 +182,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Form2.resx">
       <DependentUpon>Form2.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Setting.resx">
+      <DependentUpon>Setting.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
@@ -197,7 +198,6 @@
     <Content Include="Nlog.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <None Include="Config\camera.config.json" />
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>

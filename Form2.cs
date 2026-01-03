@@ -117,7 +117,7 @@ namespace MPV
 
         private void Form2_Load(object sender, EventArgs e)
         {
-            
+            this.WindowState = FormWindowState.Maximized;
             try { _fovs = _fovManager != null ? _fovManager.Load() : new List<FovRegion>(); } catch { _fovs = new List<FovRegion>(); }
 
             // Ensure ptr_image still fills in case designer overrides

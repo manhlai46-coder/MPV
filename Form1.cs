@@ -11,7 +11,6 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
-using MPV.Camera;
 
 namespace MPV
 {
@@ -60,17 +59,16 @@ namespace MPV
         private ComboBox _cboBarcodeType;
         private TextBox _txtBarcodeLen;
 
-        // Connect cam
-        private ICamera _cam1;
-        private ICamera _cam2;
-
         private Bitmap _cur;
         private bool _isCapturing = false;
+        // MindVision cameras
+        private MindVisionCamera _cam1;
+        private MindVisionCamera _cam2;
         //AppDomain.CurrentDomain
         public Form1()
         {
             InitializeComponent();
-
+            
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
             string fovPath = Path.Combine(baseDir, "fov_data.json");
             _fovRuntimePath = Path.Combine(baseDir, "fov_data.runtime.json");
@@ -394,12 +392,19 @@ namespace MPV
         }
         private void Form1_Load(object sender, EventArgs e)
         {
-            // Khởi tạo camera từ file config trước khi dùng
+            WindowState = FormWindowState.Maximized;
+            
+            // Initialize MindVision cameras
             try
             {
-                CameraManager.Initialize();
-                _cam1 = CameraManager.Cam1;
-                _cam2 = CameraManager.Cam2;
+                _cam1 = new MindVisionCamera();
+                _cam1.Open();
+            }
+            catch { }
+            try
+            {
+                _cam2 = new MindVisionCamera();
+                _cam2.Open();
             }
             catch { }
 
@@ -408,13 +413,18 @@ namespace MPV
             try { pn_property.HideSelection = false; } catch { }
             ptr_template.Image = null;
             SyncTemplatePanel();
+
+            // Enable owner draw for TreeView to paint circles
+            try
+            {
+                pn_property.DrawMode = TreeViewDrawMode.OwnerDrawText;
+                pn_property.DrawNode += pn_property_DrawNode;
+            }
+            catch { }
+
             try { LoadFovToTreeView(); }
             catch (Exception ex)
             { MessageBox.Show("Lỗi khi load JSON: " + ex.Message); LoggerService.Error("Error loading JSON", ex); }
-
-            // Nếu cần, start live cho cam đã mở (MindVision cần, USB không bắt buộc)
-            try { if (_cam1 != null && _cam1.IsConnected) _cam1.StartLive(); } catch { }
-            try { if (_cam2 != null && _cam2.IsConnected) _cam2.StartLive(); } catch { }
         }
 
         private void LoadFovToTreeView()
@@ -440,11 +450,12 @@ namespace MPV
             for (int i = 0; i < fovList.Count; i++)
             {
                 var fov = fovList[i];
-                var fovNode = new TreeNode($"FOV {i + 1}");
+                var fovNode = new TreeNode($"FOV {i + 1}") { Tag = fov };
 
                 for (int j = 0; j < fov.Rois.Count; j++)
                 {
-                    var roiNode = new TreeNode($"ROI {j + 1}");
+                    var roi = fov.Rois[j];
+                    var roiNode = new TreeNode($"ROI {j + 1}") { Tag = roi };
                     fovNode.Nodes.Add(roiNode);
                 }
 
@@ -474,6 +485,39 @@ namespace MPV
             {
                 pn_property.SelectedNode = nodeToSelect;
                 nodeToSelect.EnsureVisible();
+            }
+        }
+
+        // Draw green/red circle by IsEnabled next to node text
+        private void pn_property_DrawNode(object sender, DrawTreeNodeEventArgs e)
+        {
+            // Draw default text
+            e.DrawDefault = true;
+
+            Color circleColor = Color.Gray;
+            if (e.Node?.Tag is FovRegion fov)
+            {
+                circleColor = fov.IsEnabled ? Color.LimeGreen : Color.Red;
+            }
+            else if (e.Node?.Tag is RoiRegion roi)
+            {
+                circleColor = roi.IsEnabled ? Color.LimeGreen : Color.Red;
+            }
+
+            var g = e.Graphics;
+            var bounds = e.Bounds;
+            int diameter = Math.Min(Math.Max(bounds.Height - 6, 8), 12);
+            int radius = diameter / 2;
+            int centerY = bounds.Top + bounds.Height / 2;
+            // place circle a bit left of text
+            int x = Math.Max(2, bounds.Left - (radius * 2) - 6);
+            int y = centerY - radius;
+
+            using (var brush = new SolidBrush(circleColor))
+            using (var pen = new Pen(Color.DimGray))
+            {
+                g.FillEllipse(brush, x, y, diameter, diameter);
+                g.DrawEllipse(pen, x, y, diameter, diameter);
             }
         }
 
@@ -1394,8 +1438,11 @@ namespace MPV
             }
         }
 
-        // helper just for runtime json of images/templates - removed
-        // private void SaveRuntimeImages() { }
-        // private void LoadRuntimeImages() { }
+        private void settingToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Form3 f3 = new Form3();
+            f3.StartPosition = FormStartPosition.CenterParent;
+            f3.ShowDialog(this); 
+        }
     }
 }

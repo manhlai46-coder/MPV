@@ -22,7 +22,7 @@ namespace Cong1
         private int m_ImageBufferSnapshotSize = 0;
         private tSdkCameraCapbility tCameraCapability;
 
-        // 🌟 KHAI BÁO BIẾN HANDLE CHO PICTUREBOX
+        // KHAI BÁO BIẾN HANDLE CHO PICTUREBOX
         private IntPtr m_hDisplayWnd = IntPtr.Zero; // Handle của PictureBox
 
         private Thread m_tCaptureThread;
